@@ -1,0 +1,2563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Prezure
+  </title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    /* ============================================================
+       DESIGN TOKENS
+       ============================================================ */
+    :root {
+      --bg-deep:        #0e1324;
+      --bg-panel:       #161f39;
+      --bg-card:        #28314e;
+      --bg-input:       #0e1324;
+      --accent:         #f6dc4b;
+      --accent-hover:   #e0c841;
+      --accent-glow:    rgba(0,229,160,0.10);
+      --border:         rgba(255,255,255,0.08);
+      --border-accent:  rgba(0,229,160,0.30);
+      --text-primary:   #f6dc4b;
+      --text-secondary: #ffffff;
+      --text-muted:     rgba(255,255,255,0.38);
+      --panel-w:        400px;
+      --radius-sm:      6px;
+      --radius:         12px;
+      --shadow:         0 8px 48px rgba(0,0,0,0.65);
+      --font-display:   'Bebas Neue', sans-serif;
+      --font-body:      'Outfit', sans-serif;
+      --ease:           0.2s ease;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      height: 100%; overflow: hidden;
+      font-family: var(--font-body);
+      background: var(--bg-deep);
+      color: var(--text-primary);
+    }
+
+    /* ============================================================
+       LAYOUT
+       ============================================================ */
+    #app { display: flex; height: 100vh; }
+
+    #sidebar {
+      width: var(--panel-w); min-width: var(--panel-w);
+      height: 100vh; display: flex; flex-direction: column;
+      background: var(--bg-panel);
+      border-right: 1px solid var(--border);
+      box-shadow: var(--shadow); z-index: 10;
+    }
+    .sidebar-header {
+      padding: 24px 24px 18px;
+      border-bottom: 1px solid var(--border); flex-shrink: 0;
+    }
+    .sidebar-body {
+      flex: 1; overflow-y: auto; padding: 24px;
+      scrollbar-width: thin; scrollbar-color: var(--bg-card) transparent;
+    }
+    .sidebar-body::-webkit-scrollbar { width: 4px; }
+    .sidebar-body::-webkit-scrollbar-thumb { background: var(--bg-card); border-radius: 99px; }
+
+    #main-panel { flex: 1; position: relative; overflow: hidden; }
+    .main-layer  { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+    /* ============================================================
+       BRAND
+       ============================================================ */
+    .brand { display: flex; align-items: center; gap: 13px; margin-bottom: 18px; }
+    .brand-icon {
+      width: 38px; height: 38px; background: var(--accent-glow);
+      border: 1px solid var(--border-accent); border-radius: var(--radius-sm);
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .brand-icon svg { width: 20px; height: 20px; }
+    .brand-name { font-family: var(--font-display); font-size: 26px; letter-spacing: 2.5px; line-height: 1; color: var(--text-primary); }
+    .brand-sub  { font-size: 11px; color: var(--text-secondary); margin-top: 3px; letter-spacing: 0.3px; }
+
+    /* ============================================================
+       STEP DOTS
+       ============================================================ */
+    .step-dots { display: flex; gap: 6px; }
+    .step-dot { flex: 1; height: 3px; border-radius: 99px; background: var(--bg-card); transition: background 0.3s ease; }
+    .step-dot.active   { background: var(--accent); }
+    .step-dot.complete { background: var(--accent); opacity: 0.35; }
+
+    /* ============================================================
+       STEP TYPOGRAPHY
+       ============================================================ */
+    .step-label { font-size: 10.5px; font-weight: 700; letter-spacing: 2.5px; text-transform: uppercase; color: var(--text-primary); margin-bottom: 7px; }
+    .step-title { font-family: var(--font-display); font-size: 30px; letter-spacing: 1px; line-height: 1; margin-bottom: 9px; color: var(--text-primary); }
+    .step-desc  { font-size: 13px; color: var(--text-secondary); line-height: 1.65; margin-bottom: 20px; }
+
+    /* ============================================================
+       FORM FIELDS
+       ============================================================ */
+    .field { margin-bottom: 14px; }
+    .field label { display: block; font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 7px; }
+    .field input[type="hidden"] { display: none; }
+    .field input, .field select {
+      width: 100%; padding: 11px 14px;
+      background: var(--bg-input); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); color: var(--text-secondary);
+      font-family: var(--font-body); font-size: 14.5px; outline: none;
+      transition: border-color var(--ease), box-shadow var(--ease); appearance: none;
+    }
+    .field input:focus, .field select:focus { border-color: var(--border-accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+    .field input::placeholder { color: var(--text-muted); }
+
+    .select-wrap { position: relative; }
+    .select-wrap::after { content: '▾'; position: absolute; right: 13px; top: 50%; transform: translateY(-50%); color: var(--text-secondary); pointer-events: none; font-size: 13px; }
+    .select-dot { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); width: 9px; height: 9px; border-radius: 50%; pointer-events: none; z-index: 1; transition: background 0.2s ease; }
+    .field select.has-dot { padding-left: 30px; cursor: pointer; }
+
+    /* Google PlaceAutocompleteElement (new API, replaces legacy Autocomplete) */
+    #place-autocomplete-wrap {
+      width: 100%;
+      margin-bottom: 0;
+    }
+    #place-autocomplete-wrap gmp-placeautocomplete {
+      width: 100%;
+      --gmpx-color-surface: var(--bg-input);
+      --gmpx-color-on-surface: var(--text-secondary);
+      --gmpx-color-on-surface-variant: var(--text-muted);
+      --gmpx-color-primary: var(--border-accent);
+      --gmpx-font-family-base: var(--font-body);
+      --gmpx-font-size-base: 14.5px;
+      --gmpx-color-outline: var(--border);
+      --gmpx-border-radius: var(--radius-sm);
+    }
+
+    /* ============================================================
+       BUTTONS
+       ============================================================ */
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 11px 18px; border-radius: var(--radius-sm); font-family: var(--font-body); font-size: 13.5px; font-weight: 600; cursor: pointer; border: none; transition: all var(--ease); letter-spacing: 0.2px; }
+    .btn:disabled { opacity: 0.28; cursor: not-allowed; pointer-events: none; }
+
+    .btn-primary { background: var(--accent); color: #0e1324; width: 100%; font-size: 14px; padding: 13px; }
+    .btn-primary:hover { background: var(--accent-hover); transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0,229,160,0.28); }
+
+    .btn-secondary { background: var(--bg-card); color: var(--text-secondary); border: 1px solid var(--border); flex: 1; }
+    .btn-secondary:hover { border-color: var(--border-accent); color: var(--text-primary); }
+
+    .btn-ghost { background: transparent; color: var(--text-muted); font-size: 13px; padding: 9px 14px; }
+    .btn-ghost:hover { color: var(--text-secondary); }
+
+    .btn-danger { background: rgba(255,107,107,0.1); color: #ff6b6b; border: 1px solid rgba(255,107,107,0.2); flex: 1; }
+    .btn-danger:hover { background: rgba(255,107,107,0.18); }
+
+    .btn-row  { display: flex; gap: 8px; margin-bottom: 10px; }
+    .w-full   { width: 100%; }
+    .mt-8     { margin-top: 8px; }
+    .mt-12    { margin-top: 12px; }
+    .divider  { height: 1px; background: var(--border); margin: 16px 0; }
+
+    /* draw mode toggle */
+    .btn-draw-off { background: var(--bg-card); color: var(--text-secondary); border: 1px solid var(--border); width: 100%; }
+    .btn-draw-on  { background: rgba(0,229,160,0.12); color: var(--accent); border: 1px solid var(--border-accent); width: 100%; }
+    .btn-draw-off:hover, .btn-draw-on:hover { opacity: 0.85; }
+
+    /* zoom button row */
+    .zoom-row { display: flex; gap: 8px; margin-bottom: 10px; }
+    .btn-zoom { background: var(--bg-card); color: var(--text-secondary); border: 1px solid var(--border); flex: 1; font-size: 18px; font-weight: 700; padding: 8px; }
+    .btn-zoom:hover { border-color: var(--border-accent); color: var(--text-primary); }
+
+    /* ============================================================
+       STATUS BAR
+       ============================================================ */
+    .status-bar { display: flex; align-items: center; gap: 10px; padding: 10px 13px; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 13px; color: var(--text-secondary); margin-bottom: 13px; }
+    .s-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+    .s-dot.idle   { background: var(--text-muted); }
+    .s-dot.active { background: var(--accent); animation: sdot 1.4s infinite; }
+    .s-dot.done   { background: var(--accent); }
+    @keyframes sdot { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.4;transform:scale(.75)} }
+
+    /* ============================================================
+       POLYGON CHIPS
+       ============================================================ */
+    .poly-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+    .poly-chip { display: flex; align-items: center; gap: 10px; padding: 9px 13px; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 12.5px; }
+    .poly-chip-swatch { width: 9px; height: 9px; border-radius: 2px; flex-shrink: 0; }
+    .poly-chip-lbl    { flex: 1; font-weight: 500; color: var(--text-secondary); }
+    .poly-chip-area   { color: var(--text-muted); font-size: 11.5px; }
+    .poly-chip-del    { background: none; border: none; color: #ff6b6b; font-size: 14px; cursor: pointer; padding: 0 2px; opacity: 0.5; transition: opacity 0.15s; line-height: 1; }
+    .poly-chip-del:hover { opacity: 1; }
+
+    /* Context menu for right-click polygon delete */
+    .ctx-menu { position: fixed; z-index: 1000; background: var(--bg-panel); border: 1px solid var(--border); border-radius: var(--radius-sm); box-shadow: 0 6px 24px rgba(0,0,0,0.5); padding: 4px 0; min-width: 140px; }
+    .ctx-menu-item { display: flex; align-items: center; gap: 8px; padding: 8px 14px; font-size: 13px; color: #ff6b6b; cursor: pointer; font-family: var(--font-body); transition: background 0.12s; }
+    .ctx-menu-item:hover { background: rgba(255,107,107,0.1); }
+    .ctx-menu-item svg { width: 14px; height: 14px; }
+
+    /* ============================================================
+       PRICE BREAKDOWN
+       ============================================================ */
+    .price-breakdown { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 14px; }
+    .price-row { display: flex; justify-content: space-between; align-items: center; padding: 11px 15px; font-size: 13.5px; border-bottom: 1px solid var(--border); }
+    .price-row:last-child { border-bottom: none; }
+    .price-row .lbl { color: var(--text-secondary); display: flex; align-items: center; gap: 8px; }
+    .price-row .val { font-weight: 500; color: var(--text-primary); }
+    .price-row.total-row { background: var(--accent-glow); border-top: 1px solid var(--border-accent) !important; }
+    .price-row.total-row .lbl { font-family: var(--font-display); font-size: 15px; color: var(--text-secondary); }
+    .price-row.total-row .val { font-family: var(--font-display); font-size: 26px; color: var(--text-primary); }
+
+    /* ============================================================
+       ADDRESS BACKGROUND
+       ============================================================ */
+    #address-bg {
+      background:
+        linear-gradient(rgba(0,229,160,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,229,160,0.03) 1px, transparent 1px);
+      background-size: 48px 48px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .bg-watermark { text-align: center; opacity: 0.07; user-select: none; pointer-events: none; }
+    .bg-logo { font-family: var(--font-display); font-size: 130px; letter-spacing: 10px; color: var(--accent); line-height: 1; }
+    .bg-sub  { font-size: 15px; letter-spacing: 6px; color: var(--accent); margin-top: 10px; }
+
+    /* ============================================================
+       MAP LAYER
+       ============================================================ */
+    #map-layer { z-index: 1; }
+
+    /* ============================================================
+       TRACER CANVAS
+       ============================================================ */
+    #tracer-canvas {
+      touch-action: none;
+      cursor: crosshair;
+      z-index: 2;
+      background: transparent;
+    }
+    /* When draw mode is OFF, pass pointer events to map */
+    #tracer-canvas.passthrough { pointer-events: none; cursor: default; }
+
+    /* ============================================================
+       SCALE BAR  —  L-shape
+       Corner at bottom-right. V-bar rises upward; H-bar extends left.
+       Both arms share the same right edge = the corner point.
+       ============================================================ */
+    #scale-bar {
+      position: absolute;
+      bottom: 20px;
+      right: 20px;
+      z-index: 15;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;  /* right-aligns both arms → shared corner */
+      gap: 0;
+    }
+
+    /* ── Vertical arm (above the corner) ────────────── */
+    #scale-v-arm {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;  /* label and bar share right edge */
+      gap: 5px;
+    }
+    #scale-v-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: #fff;
+      text-shadow: 0 1px 4px rgba(0,0,0,0.95);
+      white-space: nowrap;
+      letter-spacing: 0.4px;
+      /* sits right-aligned above the 3px bar; naturally extends leftward */
+    }
+    #scale-v-bar {
+      width: 3px;
+      background: rgba(255,255,255,0.92);
+      border-top: 3px solid #fff;      /* tick mark at top of vertical run */
+      box-shadow: 0 0 5px rgba(0,0,0,0.9);
+      min-height: 20px;
+      /* no border-bottom: the corner h-bar's right cap closes this end */
+    }
+
+    /* ── Horizontal arm (at the corner base) ─────────── */
+    #scale-h-arm {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      /* right edge of this row = right edge of scale-bar = corner */
+    }
+    #scale-h-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: #fff;
+      text-shadow: 0 1px 4px rgba(0,0,0,0.95);
+      white-space: nowrap;
+      letter-spacing: 0.4px;
+      margin-right: 8px;
+    }
+    #scale-h-bar {
+      height: 3px;
+      background: rgba(255,255,255,0.92);
+      border-left:  3px solid #fff;    /* tick mark at far-left end */
+      border-right: 3px solid #fff;    /* corner cap — meets v-bar bottom */
+      box-shadow: 0 0 5px rgba(0,0,0,0.9);
+      min-width: 20px;
+    }
+
+    /* ── Accuracy note ───────────────────────────────── */
+    #scale-unit {
+      font-size: 9.5px;
+      color: rgba(255,255,255,0.45);
+      text-shadow: 0 1px 3px rgba(0,0,0,0.9);
+      text-align: right;
+      margin-top: 5px;
+      letter-spacing: 0.2px;
+    }
+
+    /* ============================================================
+       SUMMARY PREVIEW PANEL
+       ============================================================ */
+    #summary-preview {
+      display: flex; align-items: center; justify-content: center;
+      background:
+        linear-gradient(rgba(0,229,160,0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,229,160,0.02) 1px, transparent 1px);
+      background-size: 48px 48px;
+    }
+    #preview-wrap { position: relative; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+    #preview-address { font-size: 13px; color: var(--text-secondary); letter-spacing: 0.3px; text-align: center; opacity: 0.85; }
+    #preview-canvas { border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-panel); display: block; }
+    .preview-legend { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; }
+    .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary); }
+    .legend-swatch { width: 10px; height: 10px; border-radius: 2px; }
+
+    /* ============================================================
+       CALENDAR MODAL
+       ============================================================ */
+    #calendar-modal {
+      position: fixed; inset: 0;
+      background: rgba(14, 19, 36, 0.88);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 300; backdrop-filter: blur(4px);
+    }
+    .cal-panel {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-accent);
+      border-radius: var(--radius);
+      padding: 28px 28px 24px;
+      width: 430px; max-width: 95vw;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 24px 64px rgba(0,0,0,0.7);
+    }
+    .cal-head { margin-bottom: 20px; }
+    .cal-title { font-family: var(--font-display); font-size: 28px; letter-spacing: 1.5px; color: var(--text-primary); line-height: 1; }
+    .cal-subtitle { font-size: 12.5px; color: var(--text-secondary); margin-top: 5px; }
+    .cal-week-label { font-size: 10px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px; margin-top: 14px; }
+    .cal-week { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; margin-bottom: 4px; }
+    .cal-day {
+      display: flex; flex-direction: column; align-items: center;
+      padding: 8px 4px; border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: var(--bg-card);
+      font-size: 11px; cursor: default;
+      transition: all var(--ease);
+    }
+    .cal-day.available { cursor: pointer; }
+    .cal-day.available:hover { border-color: var(--border-accent); background: rgba(0,229,160,0.08); }
+    .cal-day.unavailable { opacity: 0.28; }
+    .cal-day.selected { border-color: var(--accent); background: rgba(0,229,160,0.14); }
+    .cal-day-name { font-size: 9px; letter-spacing: 0.5px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 3px; }
+    .cal-day-num  { font-family: var(--font-display); font-size: 18px; line-height: 1; color: var(--text-primary); }
+    .cal-day.available .cal-day-name { color: var(--text-secondary); }
+    .cal-day.selected .cal-day-name  { color: var(--accent); }
+    .cal-day.selected .cal-day-num   { color: var(--accent); }
+    .cal-day-month { font-size: 9px; color: var(--text-muted); margin-top: 2px; }
+
+    .cal-slots-label { font-size: 10px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--text-muted); margin: 16px 0 8px; }
+    .cal-slots { display: flex; flex-wrap: wrap; gap: 6px; min-height: 38px; }
+    .cal-slot {
+      padding: 7px 14px; border-radius: var(--radius-sm);
+      background: var(--bg-card); border: 1px solid var(--border);
+      color: var(--text-secondary); font-size: 12.5px; font-family: var(--font-body);
+      cursor: pointer; transition: all var(--ease);
+    }
+    .cal-slot:hover { border-color: var(--border-accent); color: var(--text-primary); }
+    .cal-slot.selected { background: rgba(0,229,160,0.14); border-color: var(--accent); color: var(--accent); font-weight: 600; }
+    .cal-no-sel { font-size: 12.5px; color: var(--text-muted); padding: 8px 0; }
+
+    .cal-selected-summary {
+      margin-top: 14px; padding: 10px 13px;
+      background: rgba(0,229,160,0.08); border: 1px solid var(--border-accent);
+      border-radius: var(--radius-sm);
+      font-size: 12.5px; color: var(--text-secondary); line-height: 1.6;
+    }
+    .cal-selected-summary strong { color: var(--text-primary); }
+
+    .cal-footer {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-top: 20px; padding-top: 16px;
+      border-top: 1px solid var(--border);
+    }
+    .cal-footer .btn-primary { width: auto; padding: 11px 24px; }
+
+    /* ============================================================
+       LOADING / OVERLAYS
+       ============================================================ */
+    #loading-screen {
+      position: fixed; inset: 0; background: var(--bg-deep);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      z-index: 999; transition: opacity 0.4s ease;
+    }
+    #loading-screen.fade-out { opacity: 0; pointer-events: none; }
+
+    #calc-overlay {
+      position: fixed; inset: 0; background: var(--bg-deep);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      z-index: 100; opacity: 0; pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+    #calc-overlay.on { opacity: 1; pointer-events: all; }
+    .calc-title { font-family: var(--font-display); font-size: 48px; letter-spacing: 4px; color: var(--text-primary); margin-bottom: 8px; }
+    .calc-sub   { font-size: 13px; color: var(--text-secondary); }
+
+    .spinner {
+      width: 34px; height: 34px; border: 3px solid var(--border);
+      border-top-color: var(--accent); border-radius: 50%;
+      animation: spin 0.75s linear infinite; margin-bottom: 14px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-lbl { font-family: var(--font-display); font-size: 12px; letter-spacing: 3px; color: var(--text-primary); }
+
+    /* ============================================================
+       SUCCESS
+       ============================================================ */
+    .success-screen { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 24px 0; }
+    .success-ring {
+      width: 64px; height: 64px; border-radius: 50%;
+      background: var(--accent-glow); border: 2px solid var(--accent);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 24px; margin-bottom: 16px; color: var(--text-primary);
+    }
+    .success-screen h2 { font-family: var(--font-display); font-size: 30px; letter-spacing: 1px; margin-bottom: 10px; color: var(--text-primary); }
+    .success-screen p  { font-size: 13.5px; color: var(--text-secondary); line-height: 1.65; margin-bottom: 22px; }
+
+    /* ============================================================
+       RESPONSIVE — MOBILE
+       ============================================================ */
+    @media (max-width: 768px) {
+      :root { --panel-w: 100vw; }
+
+      html, body { height: auto; overflow: auto; }
+      body.lock-scroll { height: 100dvh; overflow: hidden !important; }
+
+      #app { flex-direction: column; height: auto; min-height: 100vh; }
+
+      /* Prevent double-tap zoom on all interactive elements */
+      #sidebar { touch-action: manipulation; }
+      #sidebar * { touch-action: manipulation; }
+
+      #sidebar {
+        width: 100%; min-width: 100%;
+        height: auto; border-right: none;
+        border-bottom: 1px solid var(--border);
+      }
+      .sidebar-header { padding: 16px 16px 14px; }
+      .sidebar-body { padding: 16px; }
+
+      #main-panel { width: 100%; height: 50vh; min-height: 300px; }
+
+      /* ── Step 1: autocomplete dropdown positioning ─── */
+      #place-autocomplete-wrap { position: relative; z-index: 50; }
+      #app.step-1 .sidebar-body { overflow: visible; }
+
+      /* ── Step 2: locked viewport, map gets most space ─── */
+      #app.step-2 { height: 100dvh; overflow: hidden; }
+      #app.step-2 #sidebar { max-height: 35vh; overflow-y: auto; }
+      #app.step-2 #main-panel { height: 65vh; }
+
+      /* ── Mobile toolbar (rendered by JS in _step2 on mobile) ─── */
+      .mobile-toolbar {
+        display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; align-items: center;
+      }
+      .mobile-toolbar .btn {
+        padding: 7px 10px; font-size: 12px; flex-shrink: 0; margin: 0;
+      }
+      .mobile-toolbar .mtb-select {
+        flex: 1; min-width: 80px; font-size: 12px; padding: 7px 8px;
+        background: var(--bg-input); color: var(--text-secondary);
+        border: 1px solid var(--border); border-radius: var(--radius-sm);
+        appearance: none; -webkit-appearance: none;
+      }
+      .mobile-toolbar .btn-draw-on  { background: var(--accent); color: var(--bg-deep); }
+      .mobile-toolbar .btn-draw-off { background: var(--bg-card); color: var(--text-secondary); border: 1px solid var(--border); }
+
+      /* Compact mobile chips */
+      .mobile-chips { margin-bottom: 6px; }
+      .mobile-chips .poly-chip { padding: 5px 8px; font-size: 11px; }
+
+      /* ── Step 1 & 3: decorative main panel ─── */
+      #app.step-1 #main-panel,
+      #app.step-3 #main-panel { height: 35vh; min-height: 200px; }
+
+      /* Step 3: centered preview with matching sidebar background */
+      #app.step-3 #main-panel { display: flex; align-items: center; justify-content: center; }
+      #summary-preview { background: var(--bg-panel); }
+      #preview-wrap { padding: 0; }
+      #preview-canvas { border-radius: 8px; }
+
+      /* ── Global mobile typography ─── */
+      .step-title { font-size: 24px; }
+      .step-desc { font-size: 12px; margin-bottom: 14px; }
+      .bg-logo { font-size: 60px; }
+      .price-row { padding: 9px 12px; font-size: 12.5px; }
+      .price-row.total-row .val { font-size: 22px; }
+
+      /* Calendar modal full-screen on mobile */
+      .cal-panel { width: 100vw; max-width: 100vw; border-radius: 0; padding: 20px 16px; }
+      .cal-day { padding: 6px 2px; }
+      .cal-day-num { font-size: 15px; }
+    }
+
+    /* ============================================================
+       UTILITIES
+       ============================================================ */
+    .hidden { display: none !important; }
+    .offscreen { visibility: hidden !important; position: absolute; inset: 0; z-index: -1; }
+    @keyframes fadeUp { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+    .fade-up { animation: fadeUp 0.32s ease forwards; }
+    .err-text { font-size: 12px; color: #ff6b6b; min-height: 18px; margin-bottom: 10px; }
+    .tip-box {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: 12px 14px;
+      font-size: 12.5px; color: var(--text-secondary); line-height: 1.9;
+      margin-top: 14px;
+    }
+    .tip-box ul { list-style: none; padding: 0; margin: 0; }
+    .tip-box ul li { padding: 1px 0; }
+    .tip-box ul li::before { content: '— '; color: var(--text-primary); font-weight: 600; }
+    .area-note { font-size: 11px; color: var(--text-muted); line-height: 1.5; margin-bottom: 14px; }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@latest/dist/jspdf.umd.min.js"></script>
+</head>
+<body>
+
+<!-- LOADING -->
+<div id="loading-screen">
+  <div class="spinner"></div>
+  <div class="loading-lbl">PREZURE</div>
+</div>
+
+<!-- CALCULATING TRANSITION -->
+<div id="calc-overlay">
+  <div class="spinner"></div>
+  <div class="calc-title">CALCULATING</div>
+  <div class="calc-sub">Crunching your estimate…</div>
+</div>
+
+<!-- CALENDAR MODAL -->
+<div id="calendar-modal" class="hidden">
+  <div class="cal-panel">
+    <div class="cal-head">
+      <div class="cal-title">PICK A DATE</div>
+      <div class="cal-subtitle">Select your preferred service day and time</div>
+    </div>
+    <div id="calendar-content"></div>
+  </div>
+</div>
+
+<!-- APP SHELL -->
+<div id="app">
+
+  <aside id="sidebar">
+    <div class="sidebar-header">
+      <div class="brand">
+        <div class="brand-icon">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 3C9 7.5 5.5 11 5.5 14.5a6.5 6.5 0 0 0 13 0C18.5 11 15 7.5 12 3z" fill="#f6dc4b"/>
+          </svg>
+        </div>
+        <div>
+          <div class="brand-name">PREZURE</div>
+          <div class="brand-sub" id="brand-sub">Pressure Washing Estimates</div>
+        </div>
+      </div>
+      <div class="step-dots">
+        <div class="step-dot" id="dot-1"></div>
+        <div class="step-dot" id="dot-2"></div>
+        <div class="step-dot" id="dot-3"></div>
+      </div>
+    </div>
+    <div class="sidebar-body" id="sidebar-body"></div>
+  </aside>
+
+  <main id="main-panel">
+
+    <!-- Step 1 background -->
+    <div id="address-bg" class="main-layer">
+      <div class="bg-watermark">
+        <div class="bg-logo">PREZURE</div>
+        <div class="bg-sub">ESTIMATE TOOL</div>
+      </div>
+    </div>
+
+    <!-- Step 2 — Google Map (sits behind canvas) -->
+    <div id="map-layer" class="main-layer offscreen"></div>
+
+    <!-- Step 2 — Tracer canvas (overlays map) -->
+    <canvas id="tracer-canvas" class="main-layer hidden"></canvas>
+
+    <!-- Step 2 — Scale bar overlay (L-shape corner at bottom-right) -->
+    <div id="scale-bar" class="hidden">
+      <!-- Vertical arm: rises upward from corner -->
+      <div id="scale-v-arm">
+        <span id="scale-v-label">— ft</span>
+        <div id="scale-v-bar"></div>
+      </div>
+      <!-- Horizontal arm: extends left from corner -->
+      <div id="scale-h-arm">
+        <span id="scale-h-label">— ft</span>
+        <div id="scale-h-bar"></div>
+      </div>
+      <div id="scale-unit">estimated scale</div>
+    </div>
+
+    <!-- Step 3 — Preview -->
+    <div id="summary-preview" class="main-layer hidden">
+      <div id="preview-wrap">
+        <div id="preview-address"></div>
+        <canvas id="preview-canvas"></canvas>
+        <div class="preview-legend" id="preview-legend"></div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+
+<script>
+'use strict';
+
+/* ================================================================
+   ① CONFIG
+   ================================================================ */
+const CONFIG = {
+
+  // ── Contractor API ────────────────────────────────────────────
+  // The Google Maps script URL (containing the API key) is returned
+  // by contractor.php alongside contractor data. It is never stored
+  // or hardcoded here — the key never appears in any JS source file.
+  API_ENDPOINT: 'contractor.php',
+
+  // ── Scale ─────────────────────────────────────────────────────
+  // px² → sq ft — starts as an estimate; MapService replaces it
+  // with the real value derived from map zoom level + latitude.
+  PIXEL_TO_SQFT: 0.05,
+
+  // ── Tracer behaviour ──────────────────────────────────────────
+  SNAP_RADIUS:    28,
+  MIN_POINTS:      3,
+  POINT_RADIUS:    5,
+  HIT_RADIUS:     20,
+  DRAG_THRESHOLD:  6,
+
+  // ── Service visual definitions ────────────────────────────────
+  SERVICE_VISUAL: {
+    standard: { label: 'Standard', color: '#1e90ff', fill: 'rgba(30,144,255,0.22)' },
+    chemical: { label: 'Chemical', color: '#ff6600', fill: 'rgba(255,102,0,0.22)' },
+    heavy:    { label: 'Heavy',    color: '#cc00ff', fill: 'rgba(204,0,255,0.22)' },
+    negative: { label: 'Negative', color: '#ff3366', fill: 'rgba(255,51,102,0.22)' },
+  },
+
+  // ── Runtime (set by ContractorService.load()) ─────────────────
+  SERVICES:  {},
+  BASE_FEE:  0,
+};
+
+
+/* ================================================================
+   ② CONTRACTOR SERVICE
+   ================================================================ */
+const ContractorService = {
+  data: null,
+
+  async load() {
+    const key = new URLSearchParams(window.location.search).get('key') || '';
+    if (!key) throw new Error('No contractor key found in URL. Add ?key=your-key');
+
+    this.key = key;
+    const res = await fetch(`${CONFIG.API_ENDPOINT}?key=${encodeURIComponent(key)}`);
+    if (!res.ok) {
+      let msg = `Server returned ${res.status}`;
+      try { const e = await res.json(); msg = e.error || msg; } catch (_) {}
+      throw new Error(msg);
+    }
+
+    const contractor = await res.json();
+    this.data = contractor;
+
+    CONFIG.BASE_FEE = contractor.pricing.base_price;
+    CONFIG.SERVICES = {};
+    for (const [k, visual] of Object.entries(CONFIG.SERVICE_VISUAL)) {
+      if (k === 'negative') continue; // added separately below
+      const rate = contractor.pricing.rates[k];
+      if (rate && rate > 0) CONFIG.SERVICES[k] = { ...visual, rate };
+    }
+    if (Object.keys(CONFIG.SERVICES).length === 0)
+      throw new Error('Contractor has no active service types configured.');
+    // Always add negative (exclusion zone) — rate 0, not from contractor pricing
+    CONFIG.SERVICES['negative'] = { ...CONFIG.SERVICE_VISUAL['negative'], rate: 0 };
+
+    Tracer.currentType = Object.keys(CONFIG.SERVICES)[0];
+
+    // Load the Maps script using the URL provided by PHP.
+    // The key is embedded in the URL server-side — it never appears
+    // in this JS file. The URL arrives as opaque data, not a key.
+    if (contractor.maps_url) {
+      _loadMapsScript(contractor.maps_url);
+    } else {
+      console.warn('[Prezure] PHP did not return maps_url — map and Places disabled.');
+    }
+
+    return contractor;
+  },
+};
+
+
+/* ================================================================
+   ③ PRICING ENGINE
+   ================================================================ */
+const PricingEngine = {
+
+  calculate(polygons) {
+    const breakdown = {};
+    for (const k of Object.keys(CONFIG.SERVICES)) breakdown[k] = { sqft: 0, cost: 0 };
+
+    const positives = polygons.filter(p => p.type !== 'negative');
+    const negatives = polygons.filter(p => p.type === 'negative');
+
+    let totalSqft = 0;
+    let totalNegativeSqft = 0;
+
+    for (const poly of positives) {
+      let sqft = this.computeAreaSqft(poly.latLngs);
+      // Subtract overlapping negative polygon areas
+      for (const neg of negatives) {
+        const intersection = this.clipPolygon(this._ensureCCW(poly.latLngs), this._ensureCCW(neg.latLngs));
+        if (intersection.length >= 3) {
+          const subArea = this.computeAreaSqft(intersection);
+          sqft -= subArea;
+          totalNegativeSqft += subArea;
+        }
+      }
+      sqft = Math.max(0, sqft);
+      const svc = CONFIG.SERVICES[poly.type];
+      if (!svc) continue;
+      breakdown[poly.type].sqft += sqft;
+      breakdown[poly.type].cost += sqft * svc.rate;
+      totalSqft += sqft;
+    }
+
+    // Track raw negative areas for display
+    for (const neg of negatives) {
+      breakdown['negative'].sqft += this.computeAreaSqft(neg.latLngs);
+    }
+
+    let serviceTotal = 0;
+    for (const k of Object.keys(breakdown)) {
+      if (k !== 'negative') serviceTotal += breakdown[k].cost;
+    }
+    const total = CONFIG.BASE_FEE + serviceTotal;
+
+    return {
+      breakdown,
+      totalSqft:        +totalSqft.toFixed(1),
+      totalNegativeSqft:+totalNegativeSqft.toFixed(1),
+      serviceTotal:     +serviceTotal.toFixed(2),
+      total:            +total.toFixed(2),
+    };
+  },
+
+  // Compute area in sqft from LatLng array using Google's spherical geometry
+  computeAreaSqft(latLngs) {
+    if (!latLngs || latLngs.length < 3) return 0;
+    if (window.google?.maps?.geometry?.spherical?.computeArea) {
+      const path = latLngs.map(ll => new google.maps.LatLng(ll.lat, ll.lng));
+      const m2 = google.maps.geometry.spherical.computeArea(path);
+      return m2 * 10.7639;  // m² → sqft
+    }
+    // Fallback: convert to pixels and use shoelace
+    const pxPts = latLngs.map(ll => MapService.latLngToPixel(ll.lat, ll.lng)).filter(Boolean);
+    if (pxPts.length < 3) return 0;
+    return this.shoelace(pxPts) * CONFIG.PIXEL_TO_SQFT;
+  },
+
+  shoelace(pts) {
+    let area = 0;
+    const n = pts.length;
+    for (let i = 0; i < n; i++) {
+      const [x1, y1] = pts[i];
+      const [x2, y2] = pts[(i + 1) % n];
+      area += (x1 * y2) - (y1 * x2);
+    }
+    return Math.abs(area) / 2;
+  },
+
+  // Ensure polygon is counterclockwise (required by Sutherland-Hodgman)
+  _ensureCCW(latLngs) {
+    // Signed area via shoelace on lat/lng: negative = CCW, positive = CW
+    let sum = 0;
+    for (let i = 0; i < latLngs.length; i++) {
+      const a = latLngs[i], b = latLngs[(i + 1) % latLngs.length];
+      sum += (b.lng - a.lng) * (b.lat + a.lat);
+    }
+    return sum > 0 ? [...latLngs].reverse() : [...latLngs];
+  },
+
+  // Sutherland-Hodgman polygon clipping (operates on {lat,lng} objects)
+  clipPolygon(subject, clip) {
+    if (!subject.length || !clip.length) return [];
+    let output = [...subject];
+    for (let i = 0; i < clip.length; i++) {
+      if (output.length === 0) return [];
+      const input = output;
+      output = [];
+      const edgeA = clip[i], edgeB = clip[(i + 1) % clip.length];
+      for (let j = 0; j < input.length; j++) {
+        const cur = input[j], prev = input[(j + input.length - 1) % input.length];
+        const curInside  = this._isInside(cur, edgeA, edgeB);
+        const prevInside = this._isInside(prev, edgeA, edgeB);
+        if (curInside) {
+          if (!prevInside) output.push(this._lineIntersect(prev, cur, edgeA, edgeB));
+          output.push(cur);
+        } else if (prevInside) {
+          output.push(this._lineIntersect(prev, cur, edgeA, edgeB));
+        }
+      }
+    }
+    return output;
+  },
+
+  _isInside(pt, edgeA, edgeB) {
+    return (edgeB.lng - edgeA.lng) * (pt.lat - edgeA.lat) -
+           (edgeB.lat - edgeA.lat) * (pt.lng - edgeA.lng) >= 0;
+  },
+
+  _lineIntersect(p1, p2, p3, p4) {
+    const x1 = p1.lng, y1 = p1.lat, x2 = p2.lng, y2 = p2.lat;
+    const x3 = p3.lng, y3 = p3.lat, x4 = p4.lng, y4 = p4.lat;
+    const denom = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
+    if (Math.abs(denom) < 1e-12) return { lat: (y1 + y2) / 2, lng: (x1 + x2) / 2 };
+    const t = ((x1 - x3) * (y3 - y4) - (y1 - y3) * (x3 - x4)) / denom;
+    return { lat: y1 + t * (y2 - y1), lng: x1 + t * (x2 - x1) };
+  },
+
+  currency: n => '$' + (+n).toFixed(2),
+  sqft:     n => (+n).toFixed(1) + ' sq ft',
+};
+
+
+/* ================================================================
+   ④ MAP SERVICE
+   Wraps Google Maps. Provides real-world scale to the tracer.
+   ================================================================ */
+const MapService = {
+  map:              null,
+  autocomplete:     null,
+  metersPerPixel:   0.15,    // fallback estimate (~zoom 19, mid-lat)
+  mapReady:         false,
+  _pendingLocation: null,    // set by Places, consumed by goTo(2) after resize
+
+  // ── Scale formula ─────────────────────────────────────────────
+  // Standard Web Mercator scale at a given latitude and zoom.
+  _calcMpp(lat, zoom) {
+    return 156543.03392 * Math.cos(lat * Math.PI / 180) / Math.pow(2, zoom);
+  },
+
+  // px² → sq ft (used by PricingEngine via CONFIG.PIXEL_TO_SQFT)
+  getPixelToSqft() {
+    const m = this.metersPerPixel;
+    return m * m * 10.7639;
+  },
+
+  // px → ft (linear, used by scale bar)
+  getFeetPerPixel() {
+    return this.metersPerPixel * 3.28084;
+  },
+
+  // ── Map initialisation ────────────────────────────────────────
+  initMap(containerId) {
+    const el = document.getElementById(containerId);
+    if (!el || !window.google) return;
+
+    this.map = new google.maps.Map(el, {
+      center:           { lat: 27.9944, lng: -81.7603 }, // Florida default
+      zoom:             4,
+      mapTypeId:        'satellite',
+      tilt:             0,           // keep 2D overhead view
+      disableDefaultUI: true,
+      zoomControl:      false,       // we provide our own zoom buttons
+      mapTypeControl:   false,
+      streetViewControl:false,
+      fullscreenControl:false,
+      rotateControl:    false,
+      scaleControl:     false,
+    });
+
+    this.map.addListener('zoom_changed',   () => this._onMapChange());
+    this.map.addListener('center_changed', () => this._onMapChange());
+    this.map.addListener('idle',           () => this._onMapChange());
+    this.mapReady = true;
+  },
+
+  // ── Places autocomplete (new PlaceAutocompleteElement API) ─────
+  // The legacy google.maps.places.Autocomplete is unavailable for accounts
+  // created after March 1 2025. PlaceAutocompleteElement is the replacement.
+  _autocompleteEl: null,
+
+  initAutocomplete(containerId) {
+    if (!window.google?.maps?.places?.PlaceAutocompleteElement) return;
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    // Create the new autocomplete web component
+    this._autocompleteEl = new google.maps.places.PlaceAutocompleteElement({
+      types: ['address'],
+      includedRegionCodes: ['us'],
+    });
+
+    // Sync typed text to hidden input as user types (handles manual submission
+    // without selecting a suggestion)
+    this._autocompleteEl.addEventListener('input', () => {
+      const typed = this._autocompleteEl.shadowRoot?.querySelector('input')?.value || '';
+      const hiddenInput = document.getElementById('address-input');
+      if (hiddenInput) hiddenInput.value = typed;
+    });
+
+    // When user selects a suggestion, fill the hidden input and auto-submit
+    this._autocompleteEl.addEventListener('gmp-select', async (e) => {
+      const place = e.placePrediction;
+      if (!place) return;
+      // Fetch full place details to get formatted address
+      const placeObj = place.toPlace();
+      await placeObj.fetchFields({ fields: ['formattedAddress'] });
+      const addr = placeObj.formattedAddress || '';
+      // Fill the hidden input so submitAddress() can read it
+      const hiddenInput = document.getElementById('address-input');
+      if (hiddenInput) hiddenInput.value = addr;
+      // Auto-submit when a suggestion is selected
+      App.submitAddress();
+    });
+
+    container.appendChild(this._autocompleteEl);
+  },
+
+  // ── Server-side geocoding via geocode.php ─────────────────────
+  async geocode(address) {
+    const res = await fetch(`geocode.php?address=${encodeURIComponent(address)}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'Geocoding failed' }));
+      throw new Error(err.error || `Geocode returned ${res.status}`);
+    }
+    return res.json();   // { lat, lng, formatted_address }
+  },
+
+  // ── Zoom controls (called from sidebar buttons) ───────────────
+  zoomIn()  { if (this.map) this.map.setZoom(this.map.getZoom() + 1); },
+  zoomOut() { if (this.map) this.map.setZoom(Math.max(1, this.map.getZoom() - 1)); },
+
+  // ── Internal: recompute scale on any map change ───────────────
+  _onMapChange() {
+    if (!this.map) return;
+    const lat  = this.map.getCenter().lat();
+    const zoom = this.map.getZoom();
+    this.metersPerPixel  = this._calcMpp(lat, zoom);
+    CONFIG.PIXEL_TO_SQFT = this.getPixelToSqft();
+    ScaleBar.update();
+  },
+
+  // ── Coordinate conversion for static map preview ─────────────
+  pixelToLatLng(x, y) {
+    if (!this.map) return null;
+    const bounds = this.map.getBounds();
+    if (!bounds) return null;
+    const proj = this.map.getProjection();
+    if (!proj) return null;
+    const ne = proj.fromLatLngToPoint(bounds.getNorthEast());
+    const sw = proj.fromLatLngToPoint(bounds.getSouthWest());
+    const mapDiv = this.map.getDiv();
+    const scale  = Math.pow(2, this.map.getZoom());
+    const worldPt = new google.maps.Point(
+      sw.x + (x / mapDiv.offsetWidth)  * (ne.x - sw.x),
+      ne.y + (y / mapDiv.offsetHeight) * (sw.y - ne.y)
+    );
+    return proj.fromPointToLatLng(worldPt);
+  },
+
+  // ── LatLng → canvas pixel (inverse of pixelToLatLng) ──────────
+  latLngToPixel(lat, lng) {
+    if (!this.map) return null;
+    const bounds = this.map.getBounds();
+    if (!bounds) return null;
+    const proj = this.map.getProjection();
+    if (!proj) return null;
+    const ne = proj.fromLatLngToPoint(bounds.getNorthEast());
+    const sw = proj.fromLatLngToPoint(bounds.getSouthWest());
+    const worldPt = proj.fromLatLngToPoint(new google.maps.LatLng(lat, lng));
+    const mapDiv = this.map.getDiv();
+    const x = (worldPt.x - sw.x) / (ne.x - sw.x) * mapDiv.offsetWidth;
+    const y = (worldPt.y - ne.y) / (sw.y - ne.y) * mapDiv.offsetHeight;
+    return [x, y];
+  },
+
+  getPolygonBounds(polygons) {
+    if (!this.map) return null;
+    const bounds = new google.maps.LatLngBounds();
+    let count = 0;
+    for (const poly of polygons) {
+      for (const ll of poly.latLngs) {
+        bounds.extend(new google.maps.LatLng(ll.lat, ll.lng));
+        count++;
+      }
+    }
+    return count > 0 ? bounds : null;
+  },
+
+  // ── Mercator helpers for static map coordinate mapping ────────
+  // Project lat/lng to Mercator world coordinates (256×256 tile origin).
+  _project(lat, lng) {
+    const siny = Math.min(Math.max(Math.sin(lat * Math.PI / 180), -0.9999), 0.9999);
+    return {
+      x: 256 * (0.5 + lng / 360),
+      y: 256 * (0.5 - Math.log((1 + siny) / (1 - siny)) / (4 * Math.PI)),
+    };
+  },
+
+  // Find the highest zoom where a lat/lng bounding box fits inside imgW×imgH pixels.
+  computeZoomForBounds(ne, sw, imgW, imgH) {
+    const WORLD = 256;
+    const MAX_ZOOM = 21;
+
+    function latRad(lat) {
+      const sin = Math.sin(lat * Math.PI / 180);
+      const r   = Math.log((1 + sin) / (1 - sin)) / 2;
+      return Math.max(Math.min(r, Math.PI), -Math.PI) / 2;
+    }
+    function zoomFor(mapPx, worldPx, frac) {
+      return Math.floor(Math.log(mapPx / worldPx / frac) / Math.LN2);
+    }
+
+    const latFrac = (latRad(ne.lat) - latRad(sw.lat)) / Math.PI;
+    const lngDiff = ne.lng - sw.lng;
+    const lngFrac = ((lngDiff < 0) ? lngDiff + 360 : lngDiff) / 360;
+
+    const zLat = zoomFor(imgH, WORLD, latFrac);
+    const zLng = zoomFor(imgW, WORLD, lngFrac);
+    return Math.min(zLat, zLng, MAX_ZOOM);
+  },
+
+  // Convert a lat/lng to pixel position on a static map with known center/zoom/size.
+  latLngToStaticPixel(lat, lng, centerLat, centerLng, zoom, imgW, imgH) {
+    const scale = Math.pow(2, zoom);
+    const cWorld = this._project(centerLat, centerLng);
+    const pWorld = this._project(lat, lng);
+    return [
+      (pWorld.x - cWorld.x) * scale + imgW / 2,
+      (pWorld.y - cWorld.y) * scale + imgH / 2,
+    ];
+  },
+};
+
+
+/* ================================================================
+   ⑤ SCALE BAR
+   Shows 1/10 of the visible canvas width and height in feet.
+   Updates on map zoom, map pan, and window resize.
+   ================================================================ */
+const ScaleBar = {
+
+  update() {
+    const canvas = document.getElementById('tracer-canvas');
+    const hBar   = document.getElementById('scale-h-bar');
+    const vBar   = document.getElementById('scale-v-bar');
+    const hLabel = document.getElementById('scale-h-label');
+    const vLabel = document.getElementById('scale-v-label');
+    const unitEl = document.getElementById('scale-unit');
+    if (!canvas || !hBar) return;
+
+    const W = canvas.clientWidth  || canvas.offsetWidth;
+    const H = canvas.clientHeight || canvas.offsetHeight;
+    if (!W || !H) return;
+
+    const ftPerPx = MapService.getFeetPerPixel();
+    const barWpx  = Math.round(W / 10);
+    const barHpx  = Math.round(H / 10);
+    const feetW   = (barWpx * ftPerPx);
+    const feetH   = (barHpx * ftPerPx);
+
+    // Format nicely: if large, round to nearest foot; if small, one decimal
+    const fmt = v => v >= 10 ? Math.round(v) + ' ft' : v.toFixed(1) + ' ft';
+
+    hBar.style.width  = barWpx + 'px';
+    vBar.style.height = barHpx + 'px';
+    hLabel.textContent = fmt(feetW);
+    vLabel.textContent = fmt(feetH);
+
+    // Show "estimated scale" when Maps hasn't provided a real fix yet
+    if (unitEl) unitEl.textContent = MapService.mapReady ? '' : 'estimated scale';
+  },
+};
+
+
+/* ================================================================
+   ⑥ TRACER ENGINE
+   ================================================================ */
+const Tracer = {
+
+  canvas:       null,
+  ctx:          null,
+  dpr:          1,
+  drawMode:     false,    // false = map interactive, true = canvas draws
+
+  points:         [],
+  pointLatLngs:   [],   // parallel latLng array for active drawing (geo-anchored)
+  polygons:       [],
+  history:        [],
+  historyLatLngs: [],   // parallel latLng history for undo/redo
+  historyPoint: 0,
+  currentType:  'standard',
+
+  cursor:        null,
+  nearClose:     false,
+  isDragging:    false,
+  pointerIsDown: false,
+  pointerStart:  null,
+  dragIndex:     null,
+  justCreated:   null,
+  lastValidPt:   null,
+  animFrame:     null,
+  pulseT:        0,
+  _editingPoly:  null,   // { polyIdx, vertIdx } when dragging a completed polygon vertex
+
+  // ── Init ──────────────────────────────────────────────────────
+  init() {
+    this.canvas = document.getElementById('tracer-canvas');
+    this.ctx    = this.canvas.getContext('2d');
+    this.dpr    = window.devicePixelRatio || 1;
+    this._bindEvents();
+  },
+
+  show() {
+    // Always enter step 2 with draw mode OFF so the user can pan/zoom first.
+    // This also adds the 'passthrough' class so pointer events reach the map.
+    this.setDrawMode(false);
+    // Double-RAF ensures getBoundingClientRect returns correct dims
+    // after the hidden→visible transition is painted by the browser.
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        this.resize();
+        this._startLoop();
+      });
+    });
+  },
+
+  hide() { this._stopLoop(); },
+
+  setDrawMode(on) {
+    this.drawMode = on;
+    if (on) {
+      this.canvas.classList.remove('passthrough');
+      this.canvas.style.cursor = 'crosshair';
+    } else {
+      this.canvas.classList.add('passthrough');
+      this.canvas.style.cursor = 'default';
+    }
+    App._refreshDrawBtn();
+  },
+
+  resize() {
+    const rect = this.canvas.getBoundingClientRect();
+    if (!rect.width || !rect.height) { requestAnimationFrame(() => this.resize()); return; }
+    this.canvas.width  = rect.width  * this.dpr;
+    this.canvas.height = rect.height * this.dpr;
+    this.ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+    ScaleBar.update();
+    this.redraw();
+  },
+
+  _startLoop() {
+    if (this.animFrame) return;
+    const loop = t => {
+      this.pulseT    = t * 0.003;
+      this.animFrame = requestAnimationFrame(loop);
+      this.redraw();
+    };
+    this.animFrame = requestAnimationFrame(loop);
+  },
+  _stopLoop() {
+    if (this.animFrame) { cancelAnimationFrame(this.animFrame); this.animFrame = null; }
+  },
+
+  resetAll() {
+    this.points = []; this.pointLatLngs = []; this.polygons = [];
+    this.history = []; this.historyLatLngs = []; this.historyPoint = 0;
+    this.nearClose = false; this.isDragging = false;
+    this.dragIndex = null; this.cursor = null; this.justCreated = null;
+    this._editingPoly = null;
+  },
+  resetActive() {
+    this.points = []; this.pointLatLngs = [];
+    this.history = []; this.historyLatLngs = []; this.historyPoint = 0;
+    this.nearClose = false; this.justCreated = null;
+  },
+
+  // ── Events ────────────────────────────────────────────────────
+  _bindEvents() {
+    const c = this.canvas;
+    c.addEventListener('pointermove',  e => this._onMove(e));
+    c.addEventListener('pointerdown',  e => this._onDown(e));
+    c.addEventListener('pointerup',    e => this._onUp(e));
+    c.addEventListener('pointerleave', () => { this.cursor = null; });
+    c.addEventListener('contextmenu',  e => this._onContextMenu(e));
+    window.addEventListener('resize',  () => {
+      if (!this.canvas.classList.contains('hidden')) { this.resize(); ScaleBar.update(); }
+    });
+  },
+
+  _coords(e) {
+    const rect = this.canvas.getBoundingClientRect();
+    return [
+      Math.floor(((e.clientX - rect.left)  * (this.canvas.width  / rect.width))  / this.dpr),
+      Math.floor(((e.clientY - rect.top)   * (this.canvas.height / rect.height)) / this.dpr),
+    ];
+  },
+
+  _onDown(e) {
+    if (!this.drawMode) return;
+    const [x, y] = this._coords(e);
+    this.pointerIsDown = true;
+    this.pointerStart  = [x, y];
+    this.isDragging    = false;
+    this._editingPoly  = null;
+
+    // Check active drawing points first (project from latLngs for fresh coords)
+    const activePixels = this.pointLatLngs.map(ll => MapService.latLngToPixel(ll.lat, ll.lng));
+    for (let i = 0; i < activePixels.length; i++) {
+      if (i === this.justCreated || !activePixels[i]) continue;
+      const [px, py] = activePixels[i];
+      if (Math.hypot(x - px, y - py) <= CONFIG.HIT_RADIUS) {
+        this.dragIndex   = i;
+        this.points[i]   = [px, py]; // refresh pixel position
+        this.lastValidPt = [px, py];
+        this.canvas.style.cursor = 'grab';
+        return;
+      }
+    }
+    this.dragIndex = null;
+
+    // Check completed polygon vertices (reverse for topmost priority)
+    for (let pi = this.polygons.length - 1; pi >= 0; pi--) {
+      const pts = this.polygons[pi].latLngs.map(ll => MapService.latLngToPixel(ll.lat, ll.lng)).filter(Boolean);
+      for (let vi = 0; vi < pts.length; vi++) {
+        if (Math.hypot(x - pts[vi][0], y - pts[vi][1]) <= CONFIG.HIT_RADIUS) {
+          this._editingPoly = { polyIdx: pi, vertIdx: vi };
+          this.canvas.style.cursor = 'grab';
+          return;
+        }
+      }
+    }
+  },
+
+  _onMove(e) {
+    if (!this.drawMode) return;
+    const [x, y] = this._coords(e);
+    this.cursor = [x, y];
+
+    // Dragging an active drawing point
+    if (this.pointerIsDown && this.dragIndex !== null) {
+      const dist = Math.hypot(x - this.pointerStart[0], y - this.pointerStart[1]);
+      if (dist > CONFIG.DRAG_THRESHOLD) {
+        this.isDragging = true;
+        const prev = [...this.points[this.dragIndex]];
+        this.points[this.dragIndex] = [x, y];
+        if (this._polygonSelfIntersects(this.points)) {
+          this.points[this.dragIndex] = prev;
+        } else {
+          this.lastValidPt = [x, y];
+          // Update latLng for the dragged point
+          const ll = MapService.pixelToLatLng(x, y);
+          if (ll && this.pointLatLngs[this.dragIndex]) {
+            this.pointLatLngs[this.dragIndex] = { lat: ll.lat(), lng: ll.lng() };
+          }
+        }
+      }
+      return;
+    }
+
+    // Dragging a completed polygon vertex
+    if (this.pointerIsDown && this._editingPoly) {
+      const dist = Math.hypot(x - this.pointerStart[0], y - this.pointerStart[1]);
+      if (dist > CONFIG.DRAG_THRESHOLD) {
+        this.isDragging = true;
+        const { polyIdx, vertIdx } = this._editingPoly;
+        const poly = this.polygons[polyIdx];
+        const prevLL = { ...poly.latLngs[vertIdx] };
+        const newLL = MapService.pixelToLatLng(x, y);
+        if (newLL) {
+          poly.latLngs[vertIdx] = { lat: newLL.lat(), lng: newLL.lng() };
+          // Validate: convert to pixels and check self-intersection
+          const pxPts = poly.latLngs.map(ll => MapService.latLngToPixel(ll.lat, ll.lng)).filter(Boolean);
+          if (pxPts.length >= 3 && this._polygonSelfIntersects(pxPts)) {
+            poly.latLngs[vertIdx] = prevLL; // revert
+          }
+        }
+      }
+      return;
+    }
+
+    // Project active latLngs to fresh pixel coords for snap/hover
+    const hoverPts = this.pointLatLngs.map(ll => MapService.latLngToPixel(ll.lat, ll.lng));
+
+    if (hoverPts.length >= CONFIG.MIN_POINTS && hoverPts[0]) {
+      const [fx, fy] = hoverPts[0];
+      this.nearClose = Math.hypot(x - fx, y - fy) <= CONFIG.SNAP_RADIUS;
+    } else {
+      this.nearClose = false;
+    }
+
+    // Hover cursor: check active points, then completed polygon vertices
+    let onVert = false;
+    for (let i = 0; i < hoverPts.length; i++) {
+      if (i === this.justCreated || !hoverPts[i]) continue;
+      const [px, py] = hoverPts[i];
+      if (Math.hypot(x - px, y - py) <= CONFIG.HIT_RADIUS) { onVert = true; break; }
+    }
+    if (!onVert) {
+      for (const poly of this.polygons) {
+        const pts = poly.latLngs.map(ll => MapService.latLngToPixel(ll.lat, ll.lng)).filter(Boolean);
+        for (const [px, py] of pts) {
+          if (Math.hypot(x - px, y - py) <= CONFIG.HIT_RADIUS) { onVert = true; break; }
+        }
+        if (onVert) break;
+      }
+    }
+    this.canvas.style.cursor = onVert ? 'grab' : 'crosshair';
+  },
+
+  _onUp(e) {
+    if (!this.drawMode) return;
+    const [x, y]         = this._coords(e);
+    const wasDragging    = this.isDragging;
+    const endedDragIndex = this.dragIndex;
+    const wasEditingPoly = this._editingPoly;
+    this.pointerIsDown   = false;
+    this.isDragging      = false;
+    this.dragIndex       = null;
+    this._editingPoly    = null;
+    this.canvas.style.cursor = 'crosshair';
+
+    // Finished dragging a completed polygon vertex
+    if (wasEditingPoly) {
+      if (wasDragging) App.onPolygonClosed(); // recalc pricing
+      return;
+    }
+
+    if (wasDragging) {
+      // Sync dragged vertex back into history so subsequent point
+      // placements don't rebuild points from pre-drag positions.
+      if (endedDragIndex !== null && endedDragIndex < this.history.length) {
+        this.history[endedDragIndex] = [...this.points[endedDragIndex]];
+        if (this.pointLatLngs[endedDragIndex]) {
+          this.historyLatLngs[endedDragIndex] = { ...this.pointLatLngs[endedDragIndex] };
+        }
+      }
+      return;
+    }
+
+    // Tap-to-close: check distance to first point directly (nearClose may not
+    // be set on mobile taps where no pointermove fires before pointerup)
+    if (this.pointLatLngs.length >= CONFIG.MIN_POINTS) {
+      const firstPx = MapService.latLngToPixel(this.pointLatLngs[0].lat, this.pointLatLngs[0].lng);
+      if (firstPx && Math.hypot(x - firstPx[0], y - firstPx[1]) <= CONFIG.SNAP_RADIUS) {
+        this._closePolygon(); return;
+      }
+    }
+    // Refresh pixel coords from latLngs for accurate self-intersection check
+    const freshPts = this.pointLatLngs.map(ll => MapService.latLngToPixel(ll.lat, ll.lng)).filter(Boolean);
+    if (this._wouldSelfIntersect(freshPts, [x, y])) return;
+
+    const ll = MapService.pixelToLatLng(x, y);
+    const llObj = ll ? { lat: ll.lat(), lng: ll.lng() } : { lat: 0, lng: 0 };
+
+    this.points.push([x, y]);
+    this.pointLatLngs.push(llObj);
+    this.history.splice(this.historyPoint);
+    this.historyLatLngs.splice(this.historyPoint);
+    this.history.push([x, y]);
+    this.historyLatLngs.push(llObj);
+    this.historyPoint++;
+    this.points       = this.history.slice(0, this.historyPoint);
+    this.pointLatLngs = this.historyLatLngs.slice(0, this.historyPoint);
+    this.justCreated  = this.points.length - 1;
+
+    App.refreshTraceStatus();
+  },
+
+  _closePolygon() {
+    if (this.pointLatLngs.length < CONFIG.MIN_POINTS) return;
+    const latLngs = this.pointLatLngs.filter(ll => ll.lat !== 0 || ll.lng !== 0);
+    if (latLngs.length < CONFIG.MIN_POINTS) return;
+    this.polygons.push({ latLngs: [...latLngs], type: this.currentType });
+    this.resetActive();
+    App.onPolygonClosed();
+  },
+
+  // ── Controls ──────────────────────────────────────────────────
+  undo() {
+    if (this.historyPoint === 0) return;
+    this.historyPoint--;
+    this.points       = this.history.slice(0, this.historyPoint);
+    this.pointLatLngs = this.historyLatLngs.slice(0, this.historyPoint);
+    this.nearClose = false;
+    App.refreshTraceStatus();
+  },
+  redo() {
+    if (this.historyPoint >= this.history.length) return;
+    this.historyPoint++;
+    this.points       = this.history.slice(0, this.historyPoint);
+    this.pointLatLngs = this.historyLatLngs.slice(0, this.historyPoint);
+    App.refreshTraceStatus();
+  },
+  removeLastPolygon() {
+    if (!this.polygons.length) return;
+    this.polygons.pop();
+    App.onPolygonClosed();
+  },
+  removePolygon(index) {
+    if (index < 0 || index >= this.polygons.length) return;
+    this.polygons.splice(index, 1);
+    this._dismissContextMenu();
+    App.onPolygonClosed();
+  },
+
+  // ── Point-in-polygon (ray casting) ────────────────────────────
+  _pointInPolygon(x, y, pts) {
+    let inside = false;
+    for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) {
+      const [xi, yi] = pts[i], [xj, yj] = pts[j];
+      if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) inside = !inside;
+    }
+    return inside;
+  },
+
+  _findPolygonAt(x, y) {
+    for (let i = this.polygons.length - 1; i >= 0; i--) {
+      const pts = this.polygons[i].latLngs.map(ll => MapService.latLngToPixel(ll.lat, ll.lng)).filter(Boolean);
+      if (pts.length >= 3 && this._pointInPolygon(x, y, pts)) return i;
+    }
+    return -1;
+  },
+
+  // ── Right-click context menu ──────────────────────────────────
+  _onContextMenu(e) {
+    e.preventDefault();
+    this._dismissContextMenu();
+    const [x, y] = this._coords(e);
+    const idx = this._findPolygonAt(x, y);
+    if (idx < 0) return;
+
+    const svc = CONFIG.SERVICES[this.polygons[idx].type];
+    const menu = document.createElement('div');
+    menu.className = 'ctx-menu';
+    menu.id = 'tracer-ctx-menu';
+    menu.style.left = e.clientX + 'px';
+    menu.style.top  = e.clientY + 'px';
+    menu.innerHTML = `<div class="ctx-menu-item" onclick="Tracer.removePolygon(${idx})">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m2 0v14a2 2 0 01-2 2H8a2 2 0 01-2-2V6h12z"/></svg>
+      Delete</div>`;
+    document.body.appendChild(menu);
+
+    // Dismiss on click-outside or Escape
+    const dismiss = (ev) => { if (!menu.contains(ev.target)) this._dismissContextMenu(); };
+    const escDismiss = (ev) => { if (ev.key === 'Escape') this._dismissContextMenu(); };
+    setTimeout(() => {
+      document.addEventListener('pointerdown', dismiss, { once: true });
+      document.addEventListener('keydown', escDismiss, { once: true });
+    }, 0);
+  },
+
+  _dismissContextMenu() {
+    const el = document.getElementById('tracer-ctx-menu');
+    if (el) el.remove();
+  },
+  setType(type) { this.currentType = type; },
+
+  // ── Geometry (ported from original calculator.js) ─────────────
+  _EPSILON: 1e-6,
+  _orient(p,q,r){ const v=(q[1]-p[1])*(r[0]-q[0])-(q[0]-p[0])*(r[1]-q[1]); return Math.abs(v)<this._EPSILON?0:v>0?1:2; },
+  _onSeg(p,q,r){ return q[0]<=Math.max(p[0],r[0])+this._EPSILON&&q[0]>=Math.min(p[0],r[0])-this._EPSILON&&q[1]<=Math.max(p[1],r[1])+this._EPSILON&&q[1]>=Math.min(p[1],r[1])-this._EPSILON; },
+  _segsCross(p1,q1,p2,q2){ const o1=this._orient(p1,q1,p2),o2=this._orient(p1,q1,q2),o3=this._orient(p2,q2,p1),o4=this._orient(p2,q2,q1); if(o1!==o2&&o3!==o4)return true; if(o1===0&&this._onSeg(p1,p2,q1))return true; if(o2===0&&this._onSeg(p1,q2,q1))return true; if(o3===0&&this._onSeg(p2,p1,q2))return true; if(o4===0&&this._onSeg(p2,q1,q2))return true; return false; },
+  _wouldSelfIntersect(pts,newPt){ if(pts.length<2)return false; const last=pts[pts.length-1]; for(let i=0;i<pts.length-2;i++)if(this._segsCross(pts[i],pts[i+1],last,newPt))return true; return false; },
+  _polygonSelfIntersects(pts){ if(pts.length<4)return false; for(let i=0;i<pts.length-1;i++)for(let j=i+2;j<pts.length-1;j++){if(i===0&&j===pts.length-2)continue;if(this._segsCross(pts[i],pts[i+1],pts[j],pts[j+1]))return true;}return false; },
+
+  // ── Draw loop ─────────────────────────────────────────────────
+  redraw() {
+    const { ctx } = this;
+    if (!ctx) return;
+    const W = this.canvas.width  / this.dpr;
+    const H = this.canvas.height / this.dpr;
+    ctx.clearRect(0, 0, W, H);
+
+    // Subtle grid on the satellite image
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    ctx.lineWidth = 1;
+    const sp = 50;
+    for (let x = 0; x <= W; x += sp) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke(); }
+    for (let y = 0; y <= H; y += sp) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
+    ctx.restore();
+
+    // Completed polygons (convert geo coords to current viewport pixels)
+    for (const poly of this.polygons) {
+      const pts = poly.latLngs.map(ll => MapService.latLngToPixel(ll.lat, ll.lng)).filter(Boolean);
+      if (pts.length >= 3) this._drawPoly(pts, poly.type);
+    }
+    if (!this.pointLatLngs.length) return;
+
+    // Convert active drawing latLngs to current viewport pixels
+    const activePts = this.pointLatLngs.map(ll => MapService.latLngToPixel(ll.lat, ll.lng)).filter(Boolean);
+    if (!activePts.length) return;
+
+    const color = CONFIG.SERVICES[this.currentType]?.color || '#1e90ff';
+
+    // Drawn edges
+    if (activePts.length >= 2) {
+      ctx.beginPath();
+      ctx.moveTo(activePts[0][0], activePts[0][1]);
+      for (let i = 1; i < activePts.length; i++) ctx.lineTo(activePts[i][0], activePts[i][1]);
+      ctx.strokeStyle = color; ctx.lineWidth = 2.5; ctx.stroke();
+    }
+
+    // Ghost cursor line
+    if (this.cursor) {
+      const last   = activePts[activePts.length - 1];
+      const target = this.nearClose ? activePts[0] : this.cursor;
+      ctx.save();
+      ctx.globalAlpha = this.nearClose ? 0.8 : 0.35;
+      ctx.beginPath(); ctx.moveTo(last[0], last[1]); ctx.lineTo(target[0], target[1]);
+      ctx.strokeStyle = color; ctx.lineWidth = 1.8;
+      ctx.setLineDash(this.nearClose ? [] : [7, 5]);
+      ctx.stroke(); ctx.setLineDash([]); ctx.restore();
+    }
+
+    if (this.nearClose) this._drawSnapRing(activePts[0][0], activePts[0][1], color);
+
+    for (let i = 0; i < activePts.length; i++) {
+      this._drawDot(activePts[i][0], activePts[i][1], color, i === 0 && this.nearClose);
+    }
+  },
+
+  _drawPoly(pts, type) {
+    const { ctx } = this;
+    const svc = CONFIG.SERVICES[type];
+    if (!svc) return;
+    ctx.beginPath();
+    ctx.moveTo(pts[0][0], pts[0][1]);
+    for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]);
+    ctx.closePath();
+    if (type === 'negative') {
+      ctx.fillStyle = this._getNegativePattern(); ctx.fill();
+      ctx.save(); ctx.setLineDash([6, 4]);
+      ctx.strokeStyle = svc.color; ctx.lineWidth = 2.5; ctx.stroke();
+      ctx.setLineDash([]); ctx.restore();
+    } else {
+      ctx.fillStyle = svc.fill; ctx.fill();
+      ctx.strokeStyle = svc.color; ctx.lineWidth = 2.5; ctx.stroke();
+    }
+    for (const [px, py] of pts) this._drawDot(px, py, svc.color, false);
+  },
+
+  _negativePattern: null,
+  _getNegativePattern() {
+    if (this._negativePattern) return this._negativePattern;
+    const c = document.createElement('canvas');
+    c.width = c.height = 10;
+    const p = c.getContext('2d');
+    p.strokeStyle = 'rgba(255,51,102,0.35)';
+    p.lineWidth = 1.5;
+    p.beginPath(); p.moveTo(0, 10); p.lineTo(10, 0); p.stroke();
+    p.beginPath(); p.moveTo(-2, 2); p.lineTo(2, -2); p.stroke();
+    p.beginPath(); p.moveTo(8, 12); p.lineTo(12, 8); p.stroke();
+    this._negativePattern = this.ctx.createPattern(c, 'repeat');
+    return this._negativePattern;
+  },
+
+  _drawDot(x, y, color, highlight) {
+    const { ctx } = this;
+    const r = highlight ? CONFIG.POINT_RADIUS + 2 : CONFIG.POINT_RADIUS;
+    ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fillStyle = highlight ? color : '#161f39';
+    ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.fill(); ctx.stroke();
+  },
+
+  _drawSnapRing(x, y, color) {
+    const { ctx } = this;
+    const pulse  = Math.sin(this.pulseT) * 0.5 + 0.5;
+    const outerR = 13 + pulse * 6;
+    ctx.save();
+    ctx.beginPath(); ctx.arc(x, y, outerR, 0, Math.PI*2);
+    ctx.strokeStyle = color; ctx.lineWidth = 1.5; ctx.globalAlpha = 0.45 - pulse*0.25; ctx.stroke();
+    ctx.beginPath(); ctx.arc(x, y, 10, 0, Math.PI*2);
+    ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.globalAlpha = 0.9; ctx.stroke();
+    ctx.beginPath(); ctx.arc(x, y, 10, 0, Math.PI*2);
+    ctx.fillStyle = color; ctx.globalAlpha = 0.18; ctx.fill();
+    ctx.restore();
+  },
+
+  // ── Preview (step 3 mini canvas) ──────────────────────────────
+  drawPreview(previewCanvas) {
+    const pctx = previewCanvas.getContext('2d');
+    const pw = previewCanvas.width, ph = previewCanvas.height;
+    pctx.clearRect(0, 0, pw, ph);
+    if (!this.polygons.length) return;
+
+    // Convert latLngs to pixel arrays for preview
+    const polyPixels = this.polygons.map(poly =>
+      poly.latLngs.map(ll => MapService.latLngToPixel(ll.lat, ll.lng)).filter(Boolean)
+    );
+
+    let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
+    for (const pts of polyPixels)
+      for (const [px,py] of pts) {
+        minX=Math.min(minX,px); minY=Math.min(minY,py);
+        maxX=Math.max(maxX,px); maxY=Math.max(maxY,py);
+      }
+    if (minX === Infinity) return;
+    const bw=maxX-minX||1, bh=maxY-minY||1, pad=28;
+    const scale=Math.min((pw-pad*2)/bw,(ph-pad*2)/bh);
+    const ox=(pw-bw*scale)/2-minX*scale, oy=(ph-bh*scale)/2-minY*scale;
+
+    pctx.save(); pctx.translate(ox,oy); pctx.scale(scale,scale);
+
+    pctx.strokeStyle='rgba(255,255,255,0.04)'; pctx.lineWidth=1/scale;
+    for(let gx=minX;gx<=maxX;gx+=40){pctx.beginPath();pctx.moveTo(gx,minY);pctx.lineTo(gx,maxY);pctx.stroke();}
+    for(let gy=minY;gy<=maxY;gy+=40){pctx.beginPath();pctx.moveTo(minX,gy);pctx.lineTo(maxX,gy);pctx.stroke();}
+
+    for (let i = 0; i < this.polygons.length; i++) {
+      const pts = polyPixels[i];
+      const svc = CONFIG.SERVICES[this.polygons[i].type];
+      if (!svc || pts.length < 3) continue;
+      pctx.beginPath(); pctx.moveTo(pts[0][0],pts[0][1]);
+      for(let j=1;j<pts.length;j++) pctx.lineTo(pts[j][0],pts[j][1]);
+      pctx.closePath();
+      pctx.fillStyle=svc.fill; pctx.fill();
+      pctx.strokeStyle=svc.color; pctx.lineWidth=2.5/scale; pctx.stroke();
+      for(const[px,py] of pts){pctx.beginPath();pctx.arc(px,py,4/scale,0,Math.PI*2);pctx.fillStyle='#161f39';pctx.strokeStyle=svc.color;pctx.lineWidth=1.5/scale;pctx.fill();pctx.stroke();}
+    }
+    pctx.restore();
+  },
+
+  // ── Preview with satellite background (step 3) ────────────────
+  async drawPreviewWithMap(previewCanvas) {
+    const pctx = previewCanvas.getContext('2d');
+    const pw = previewCanvas.width, ph = previewCanvas.height;
+    pctx.clearRect(0, 0, pw, ph);
+    if (!this.polygons.length) return;
+
+    // ── 1. Read lat/lng directly from polygons ──────────────────
+    let minLat = Infinity, maxLat = -Infinity, minLng = Infinity, maxLng = -Infinity;
+
+    for (const poly of this.polygons) {
+      for (const ll of poly.latLngs) {
+        if (ll.lat < minLat) minLat = ll.lat; if (ll.lat > maxLat) maxLat = ll.lat;
+        if (ll.lng < minLng) minLng = ll.lng; if (ll.lng > maxLng) maxLng = ll.lng;
+      }
+    }
+
+    if (minLat === Infinity) { this._drawGrid(pctx, pw, ph); return; }
+
+    // ── 2. Pad the bounding box by 10% ─────────────────────────
+    const latPad = (maxLat - minLat) * 0.10 || 0.0003;
+    const lngPad = (maxLng - minLng) * 0.10 || 0.0003;
+    const sw = { lat: minLat - latPad, lng: minLng - lngPad };
+    const ne = { lat: maxLat + latPad, lng: maxLng + lngPad };
+    const centerLat = (sw.lat + ne.lat) / 2;
+    const centerLng = (sw.lng + ne.lng) / 2;
+
+    // ── 3. Compute zoom that fits the padded bounds ────────────
+    const imgW = Math.min(pw, 640);
+    const imgH = Math.min(ph, 640);
+    const zoom = MapService.computeZoomForBounds(ne, sw, imgW, imgH);
+
+    // ── 4. Fetch satellite static map ──────────────────────────
+    try {
+      const img = await this._fetchStaticMap(centerLat, centerLng, zoom, imgW, imgH);
+      pctx.drawImage(img, 0, 0, pw, ph);
+    } catch (err) {
+      console.warn('Static map fetch failed, using grid fallback:', err);
+      this._drawGrid(pctx, pw, ph);
+    }
+
+    // ── 5. Map polygon lat/lng → static map pixel coords ───────
+    // Scale factor: the static map image was imgW×imgH but drawn at pw×ph
+    const sx = pw / imgW, sy = ph / imgH;
+
+    for (let i = 0; i < this.polygons.length; i++) {
+      const svc = CONFIG.SERVICES[this.polygons[i].type];
+      if (!svc || !this.polygons[i].latLngs.length) continue;
+
+      const mapped = this.polygons[i].latLngs.map(({ lat, lng }) => {
+        const [rx, ry] = MapService.latLngToStaticPixel(lat, lng, centerLat, centerLng, zoom, imgW, imgH);
+        return [rx * sx, ry * sy];
+      });
+
+      pctx.beginPath();
+      pctx.moveTo(mapped[0][0], mapped[0][1]);
+      for (let j = 1; j < mapped.length; j++) pctx.lineTo(mapped[j][0], mapped[j][1]);
+      pctx.closePath();
+      pctx.fillStyle = svc.fill; pctx.fill();
+      pctx.strokeStyle = svc.color; pctx.lineWidth = 2.5; pctx.stroke();
+      for (const [mx, my] of mapped) {
+        pctx.beginPath(); pctx.arc(mx, my, 4, 0, Math.PI * 2);
+        pctx.fillStyle = '#161f39'; pctx.strokeStyle = svc.color; pctx.lineWidth = 1.5;
+        pctx.fill(); pctx.stroke();
+      }
+    }
+  },
+
+  _fetchStaticMap(lat, lng, zoom, w, h) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload  = () => resolve(img);
+      img.onerror = () => reject(new Error('Static map image failed to load'));
+      img.src = `staticmap.php?lat=${lat}&lng=${lng}&zoom=${zoom}&width=${w}&height=${h}`;
+    });
+  },
+
+  _drawGrid(ctx, w, h) {
+    ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+    ctx.lineWidth = 1;
+    for (let gx = 0; gx <= w; gx += 40) { ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, h); ctx.stroke(); }
+    for (let gy = 0; gy <= h; gy += 40) { ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(w, gy); ctx.stroke(); }
+  },
+};
+
+
+/* ================================================================
+   ⑦ CALENDAR
+   Two-week booking selector. Availability driven by contractor data.
+   ================================================================ */
+const Calendar = {
+  availability: null,
+  selectedDate: null,
+  selectedTime: null,
+  _onConfirm:   null,
+
+  open(availability, onConfirm) {
+    this.availability = availability || { days: [], time_slots: [] };
+    this._onConfirm   = onConfirm;
+    this.selectedDate = null;
+    this.selectedTime = null;
+    this._render();
+    document.getElementById('calendar-modal').classList.remove('hidden');
+  },
+
+  close() {
+    document.getElementById('calendar-modal').classList.add('hidden');
+  },
+
+  selectDate(ts) {
+    this.selectedDate = new Date(ts);
+    this.selectedTime = null;
+    this._render();
+  },
+
+  selectTime(t) {
+    this.selectedTime = t;
+    this._render();
+  },
+
+  confirm() {
+    if (!this.selectedDate || !this.selectedTime) return;
+    const booking = {
+      date:        this.selectedDate.toISOString().split('T')[0],
+      time:        this.selectedTime,
+      displayDate: this.selectedDate.toLocaleDateString('en-US', { weekday:'long', year:'numeric', month:'long', day:'numeric' }),
+      displayTime: this._fmtTime(this.selectedTime),
+    };
+    this.close();
+    if (this._onConfirm) this._onConfirm(booking);
+  },
+
+  _fmtTime(t) {
+    const [h, m] = t.split(':').map(Number);
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    return `${h % 12 || 12}:${m.toString().padStart(2,'0')} ${ampm}`;
+  },
+
+  _render() {
+    const today    = new Date(); today.setHours(0,0,0,0);
+    const DAY_NAMES = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
+    const MON_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const availDays = (this.availability.days || []).map(d => d.toLowerCase());
+    const slots     = this.availability.time_slots || [];
+
+    // 14 days starting tomorrow
+    const dates = [];
+    for (let i = 1; i <= 14; i++) {
+      const d = new Date(today); d.setDate(today.getDate() + i); dates.push(d);
+    }
+
+    const renderDay = d => {
+      const dn   = DAY_NAMES[d.getDay()];
+      const avail = availDays.includes(dn);
+      const sel  = this.selectedDate && d.toDateString() === this.selectedDate.toDateString();
+      return `<div class="cal-day ${avail?'available':'unavailable'} ${sel?'selected':''}"
+                   ${avail ? `onclick="Calendar.selectDate(${d.getTime()})"` : ''}>
+        <span class="cal-day-name">${dn.slice(0,3)}</span>
+        <span class="cal-day-num">${d.getDate()}</span>
+        <span class="cal-day-month">${MON_NAMES[d.getMonth()]}</span>
+      </div>`;
+    };
+
+    const slotsHtml = !this.selectedDate
+      ? '<span class="cal-no-sel">Select a date to see times</span>'
+      : slots.length
+        ? slots.map(t => {
+            const sel = this.selectedTime === t;
+            return `<button class="cal-slot ${sel?'selected':''}" onclick="Calendar.selectTime('${t}')">${this._fmtTime(t)}</button>`;
+          }).join('')
+        : '<span class="cal-no-sel">No times available</span>';
+
+    const hasBoth   = this.selectedDate && this.selectedTime;
+    const summary   = hasBoth
+      ? `<div class="cal-selected-summary">
+           <strong>${this.selectedDate.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}</strong>
+           at <strong>${this._fmtTime(this.selectedTime)}</strong>
+         </div>` : '';
+
+    document.getElementById('calendar-content').innerHTML = `
+      <div class="cal-week-label">Week 1</div>
+      <div class="cal-week">${dates.slice(0,7).map(renderDay).join('')}</div>
+      <div class="cal-week-label">Week 2</div>
+      <div class="cal-week">${dates.slice(7,14).map(renderDay).join('')}</div>
+
+      <div class="cal-slots-label">
+        Available Times${this.selectedDate ? ' — ' + this.selectedDate.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}) : ''}
+      </div>
+      <div class="cal-slots">${slotsHtml}</div>
+      ${summary}
+
+      <div class="cal-footer">
+        <button class="btn btn-ghost" onclick="Calendar.close()">Cancel</button>
+        <button class="btn btn-primary" style="width:auto;padding:11px 24px;"
+          ${hasBoth ? '' : 'disabled'}
+          onclick="Calendar.confirm()">
+          Confirm Booking →
+        </button>
+      </div>
+    `;
+  },
+};
+
+
+/* ================================================================
+   ⑧ UI HELPERS
+   ================================================================ */
+const UI = {
+  $:       id => document.getElementById(id),
+  show:    id => UI.$(id)?.classList.remove('hidden'),
+  hide:    id => UI.$(id)?.classList.add('hidden'),
+  setText: (id, t) => { const e=UI.$(id); if(e) e.textContent=t; },
+};
+
+
+/* ================================================================
+   ⑨ APP
+   ================================================================ */
+const App = {
+  step:       1,
+  address:    '',
+  contractor: null,
+  booking:    null,   // set by Calendar.confirm()
+
+  async init() {
+    Tracer.init();
+    try {
+      this.contractor = await ContractorService.load();
+      const sub = UI.$('brand-sub');
+      if (sub) sub.textContent = this.contractor.company_name;
+      document.title = `Estimate — ${this.contractor.company_name}`;
+      this.goTo(1);
+    } catch (err) {
+      this._renderLoadError(err.message);
+    } finally {
+      const ls = UI.$('loading-screen');
+      ls?.classList.add('fade-out');
+      setTimeout(() => ls?.remove(), 450);
+    }
+  },
+
+  _renderLoadError(msg) {
+    UI.$('sidebar-body').innerHTML = `
+      <div style="padding-top:12px">
+        <div class="step-label" style="color:#ff6b6b">Error</div>
+        <div class="step-title">COULDN'T LOAD</div>
+        <p class="step-desc">${msg}</p>
+        <p class="area-note">Check your <code>?key=</code> URL parameter and server connection.</p>
+      </div>`;
+    UI.show('address-bg');
+  },
+
+  goTo(step) {
+    this.step = step;
+    const appEl = UI.$('app');
+    if (appEl) { appEl.classList.remove('step-1','step-2','step-3'); appEl.classList.add('step-'+step); }
+    // Lock body scroll on mobile during step 2 (map tracing)
+    if (window.innerWidth <= 768) {
+      document.body.classList.toggle('lock-scroll', step === 2);
+    }
+    this._updateDots(step);
+
+    step === 1 ? UI.show('address-bg')      : UI.hide('address-bg');
+    // map-layer uses offscreen instead of hidden so Google Maps keeps real dimensions
+    const mapEl = UI.$('map-layer');
+    if (step === 2) {
+      mapEl?.classList.remove('offscreen');
+      // Init map on first visit to step 2 (deferred from _mapsReady to avoid
+      // Google's error dialog showing during step 1 while the map is offscreen).
+      if (!MapService.map && window.google?.maps) {
+        MapService.initMap('map-layer');
+      }
+      if (MapService.map) {
+        google.maps.event.trigger(MapService.map, 'resize');
+        // Navigate AFTER resize so the viewport isn't reset back to Florida.
+        // setCenter is instant (no pan animation) → map is correct on first render.
+        if (MapService._pendingLocation) {
+          MapService.map.setCenter(MapService._pendingLocation);
+          MapService.map.setZoom(20);
+          MapService._pendingLocation = null;
+        }
+      }
+    } else {
+      mapEl?.classList.add('offscreen');
+    }
+    step === 2 ? UI.show('tracer-canvas')   : UI.hide('tracer-canvas');
+    step === 2 ? UI.show('scale-bar')       : UI.hide('scale-bar');
+    step === 3 ? UI.show('summary-preview') : UI.hide('summary-preview');
+
+    if (step === 2) {
+      Tracer.show();
+    } else {
+      Tracer.hide();
+    }
+
+    if (step === 3) this._buildPreview();
+    this._renderSidebar(step);
+  },
+
+  _updateDots(active) {
+    for (let i = 1; i <= 3; i++) {
+      const d = UI.$(`dot-${i}`);
+      if (!d) continue;
+      d.className = 'step-dot' +
+        (i < active  ? ' complete' : '') +
+        (i === active ? ' active'  : '');
+    }
+  },
+
+  _renderSidebar(step) {
+    const body = UI.$('sidebar-body');
+    body.innerHTML = '';
+    body.classList.add('fade-up');
+    setTimeout(() => body.classList.remove('fade-up'), 350);
+    ({ 1:this._step1, 2:this._step2, 3:this._step3 }[step] || (()=>{})).call(this, body);
+  },
+
+  // ── STEP 1 ────────────────────────────────────────────────────
+  _step1(body) {
+    body.innerHTML = `
+      <div class="step-label">Step 1 of 3</div>
+      <div class="step-title">YOUR ADDRESS</div>
+      <p class="step-desc">Enter the property address.</p>
+      <div class="field">
+        <label>Service Address</label>
+        <div id="place-autocomplete-wrap"></div>
+        <input type="hidden" id="address-input" />
+      </div>
+      <div class="err-text" id="addr-err"></div>
+      <button class="btn btn-primary" onclick="App.submitAddress()">Trace →</button>
+    `;
+
+    // Mount the PlaceAutocompleteElement if the API is loaded
+    if (window.google?.maps?.places?.PlaceAutocompleteElement) {
+      MapService.initAutocomplete('place-autocomplete-wrap');
+    } else {
+      // Fallback: show a plain text input if Places API isn't available
+      const wrap = UI.$('place-autocomplete-wrap');
+      if (wrap) {
+        wrap.innerHTML = '<input type="text" id="address-fallback" placeholder="123 Main St, City, State…" autocomplete="off" />';
+        const fb = UI.$('address-fallback');
+        fb?.focus();
+        fb?.addEventListener('keydown', e => { if (e.key === 'Enter') App.submitAddress(); });
+        // Sync fallback input to hidden input on change
+        fb?.addEventListener('input', () => {
+          const hi = UI.$('address-input');
+          if (hi) hi.value = fb.value;
+        });
+      }
+    }
+  },
+
+  async submitAddress() {
+    const val = UI.$('address-input')?.value.trim();
+    if (!val || val.length < 5) {
+      UI.$('addr-err').textContent = 'Please enter a valid address.';
+      return;
+    }
+
+    // Show loading state
+    const btn = document.querySelector('#sidebar-body .btn-primary');
+    if (btn) { btn.textContent = 'Locating…'; btn.disabled = true; }
+    UI.$('addr-err').textContent = '';
+
+    try {
+      // Server-side geocoding — works regardless of Places API status
+      const geo = await MapService.geocode(val);
+      // Store coordinates for goTo(2) to consume after map resize
+      MapService._pendingLocation = { lat: geo.lat, lng: geo.lng };
+      this.onAddressSelected(geo.formatted_address || val);
+    } catch (err) {
+      UI.$('addr-err').textContent = err.message || 'Could not find that address.';
+      if (btn) { btn.textContent = 'Trace →'; btn.disabled = false; }
+    }
+  },
+
+  onAddressSelected(address) {
+    this.address = address;
+    Tracer.resetAll();
+    this.goTo(2);
+    // Bind Places autocomplete to the map now that map exists
+    // (map is init'd inside goTo(2) above)
+    // If Maps loaded, re-init Places on step 1 next time via goTo(1)
+  },
+
+  // ── STEP 2 ────────────────────────────────────────────────────
+  _step2(body) {
+    const hasPolys  = Tracer.polygons.length > 0;
+    const isDrawing = Tracer.points.length > 0;
+
+    const svcOptions = Object.entries(CONFIG.SERVICES).map(([k, s]) =>
+      k === 'negative'
+        ? `<option value="${k}">${s.label} (exclusion zone)</option>`
+        : `<option value="${k}">${s.label} — $${s.rate.toFixed(2)}/sq ft</option>`
+    ).join('');
+
+    let dotCls = 'idle', statusTxt = 'Enable draw mode, then click canvas';
+    if (isDrawing)     { dotCls='active'; statusTxt=`${Tracer.points.length} point${Tracer.points.length!==1?'s':''} placed`; }
+    else if (hasPolys) { dotCls='done';   statusTxt=`${Tracer.polygons.length} area${Tracer.polygons.length!==1?'s':''} traced`; }
+
+    const chips = Tracer.polygons.map((p, i) => {
+      const svc  = CONFIG.SERVICES[p.type];
+      const sqft = PricingEngine.computeAreaSqft(p.latLngs).toFixed(1);
+      const prefix = p.type === 'negative' ? '−' : '~';
+      return `<div class="poly-chip">
+        <div class="poly-chip-swatch" style="background:${svc.color}"></div>
+        <span class="poly-chip-lbl">${svc.label}</span>
+        <span class="poly-chip-area">${prefix}${sqft} sq ft</span>
+        <button class="poly-chip-del" onclick="Tracer.removePolygon(${i})" title="Delete area">✕</button>
+      </div>`;
+    }).join('');
+
+    const currentColor = CONFIG.SERVICES[Tracer.currentType]?.color || '#1e90ff';
+    const drawOn       = Tracer.drawMode;
+
+    const isMobile = window.innerWidth <= 768;
+
+    if (isMobile) {
+      // ── Compact mobile layout ──────────────────────────────────
+      body.innerHTML = `
+        <div class="step-label">Step 2 of 3</div>
+        <div class="step-title" style="font-size:20px;margin-bottom:6px;">TRACE AREA</div>
+
+        <div class="mobile-toolbar">
+          <select id="svc-select" class="mtb-select" onchange="App.onTypeChange(this.value)">
+            ${svcOptions}
+          </select>
+          <button id="draw-mode-btn" class="btn ${drawOn ? 'btn-draw-on' : 'btn-draw-off'}"
+            onclick="Tracer.setDrawMode(${!drawOn})">✏${drawOn ? ' ON' : ' OFF'}</button>
+          <button class="btn btn-secondary" onclick="Tracer.undo()" title="Undo">↩</button>
+          <button class="btn btn-secondary" onclick="Tracer.redo()" title="Redo">↪</button>
+          <button class="btn btn-secondary" onclick="App.clearActive()" title="Clear points">✕</button>
+          <button class="btn btn-danger" onclick="App.removeLastPoly()" title="Remove area">⊘</button>
+        </div>
+
+        <div class="status-bar" style="margin-bottom:6px;">
+          <div class="s-dot ${dotCls}"></div>
+          <span id="trace-status">${statusTxt}</span>
+        </div>
+
+        ${chips ? `<div class="mobile-chips poly-list">${chips}</div>` : ''}
+
+        <button class="btn btn-primary" id="btn-estimate" ${!hasPolys?'disabled':''} onclick="App.goToSummary()" style="margin-bottom:6px;">
+          View Estimate →
+        </button>
+        <button class="btn btn-ghost w-full" onclick="App.goTo(1)" style="font-size:12px;padding:6px;">← Back</button>
+      `;
+    } else {
+      // ── Desktop layout ─────────────────────────────────────────
+      body.innerHTML = `
+        <div class="step-label">Step 2 of 3</div>
+        <div class="step-title">TRACE AREA</div>
+        <p class="step-desc">Select cleaning type, then click canvas to begin tracing. To close area, approach the first point.</p>
+
+        <div class="zoom-row">
+          <button class="btn btn-zoom" onclick="MapService.zoomIn()">+</button>
+          <button class="btn btn-zoom" onclick="MapService.zoomOut()">−</button>
+        </div>
+
+        <button id="draw-mode-btn"
+          class="btn ${drawOn ? 'btn-draw-on' : 'btn-draw-off'}"
+          onclick="Tracer.setDrawMode(${!drawOn})" style="margin-bottom:10px;">
+          ${drawOn ? '✏ Draw Mode: ON' : '✏ Draw Mode: OFF'}
+        </button>
+
+        <div class="field">
+          <label>Cleaning Type</label>
+          <div class="select-wrap">
+            <span id="svc-dot" class="select-dot" style="background:${currentColor}"></span>
+            <select id="svc-select" class="has-dot" onchange="App.onTypeChange(this.value)">
+              ${svcOptions}
+            </select>
+          </div>
+        </div>
+
+        <div class="status-bar">
+          <div class="s-dot ${dotCls}"></div>
+          <span id="trace-status">${statusTxt}</span>
+        </div>
+
+        ${chips ? `<div class="poly-list">${chips}</div>` : ''}
+
+        <div class="btn-row">
+          <button class="btn btn-secondary" onclick="Tracer.undo()">↩ Undo</button>
+          <button class="btn btn-secondary" onclick="Tracer.redo()">↪ Redo</button>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-secondary" onclick="App.clearActive()">✕ Clear Points</button>
+          <button class="btn btn-danger"    onclick="App.removeLastPoly()">⊘ Remove Area</button>
+        </div>
+
+        <div class="divider"></div>
+
+        <button class="btn btn-primary" id="btn-estimate" ${!hasPolys?'disabled':''} onclick="App.goToSummary()">
+          View Estimate →
+        </button>
+        <div class="mt-8"></div>
+        <button class="btn btn-ghost w-full" onclick="App.goTo(1)">← Back to Address</button>
+
+        <div class="tip-box">
+          <ul>
+            <li>Zoom map first, then enable Draw Mode</li>
+            <li>Click to place points</li>
+            <li>Approach start point to close shape</li>
+            <li>Drag any point to adjust</li>
+          </ul>
+        </div>
+      `;
+    }
+
+    const sel = UI.$('svc-select');
+    if (sel) sel.value = Tracer.currentType;
+
+  },
+
+  _refreshDrawBtn() {
+    const btn = UI.$('draw-mode-btn');
+    if (!btn) return;
+    const on = Tracer.drawMode;
+    const isMobile = window.innerWidth <= 768;
+    btn.className = `btn ${on ? 'btn-draw-on' : 'btn-draw-off'}`;
+    btn.textContent = isMobile ? (on ? '✏ ON' : '✏ OFF') : (on ? '✏ Draw Mode: ON' : '✏ Draw Mode: OFF');
+    btn.setAttribute('onclick', `Tracer.setDrawMode(${!on})`);
+  },
+
+  refreshTraceStatus() {
+    const isDrawing = Tracer.points.length > 0;
+    const hasPolys  = Tracer.polygons.length > 0;
+    const el  = UI.$('trace-status');
+    const btn = UI.$('btn-estimate');
+    if (el) {
+      if (isDrawing)     el.textContent = `${Tracer.points.length} point${Tracer.points.length!==1?'s':''} placed`;
+      else if (hasPolys) el.textContent = `${Tracer.polygons.length} area${Tracer.polygons.length!==1?'s':''} traced`;
+      else               el.textContent = 'Enable draw mode, then click canvas';
+    }
+    if (btn) btn.disabled = !hasPolys;
+  },
+
+  onPolygonClosed() { this._renderSidebar(2); },
+
+  onTypeChange(type) {
+    Tracer.setType(type);
+    const dot = UI.$('svc-dot');
+    if (dot) dot.style.background = CONFIG.SERVICES[type].color;
+  },
+
+  clearActive()    { Tracer.resetActive(); this.refreshTraceStatus(); },
+  removeLastPoly() { Tracer.removeLastPolygon(); },
+
+  goToSummary() {
+    if (!Tracer.polygons.length) return;
+    const ov = UI.$('calc-overlay');
+    ov.classList.add('on');
+    setTimeout(() => { ov.classList.remove('on'); this.goTo(3); }, 900);
+  },
+
+  // ── STEP 3 ────────────────────────────────────────────────────
+  _step3(body) {
+    const res = PricingEngine.calculate(Tracer.polygons);
+    const fmt = PricingEngine.currency;
+
+    const rows = Object.entries(CONFIG.SERVICES).map(([key, svc]) => {
+      if (key === 'negative') return ''; // shown separately below
+      const b = res.breakdown[key];
+      if (!b || b.sqft < 0.01) return '';
+      return `<div class="price-row">
+        <span class="lbl">
+          <span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${svc.color};flex-shrink:0"></span>
+          ${svc.label} (${PricingEngine.sqft(b.sqft)})
+        </span>
+        <span class="val">${fmt(b.cost)}</span>
+      </div>`;
+    }).join('');
+
+    const negRow = '';
+
+    body.innerHTML = `
+      <div class="step-label">Step 3 of 3</div>
+      <div class="step-title">YOUR ESTIMATE</div>
+      <p class="step-desc">Review the breakdown, then book a time.</p>
+
+      <div class="price-breakdown">
+        <div class="price-row"><span class="lbl">Base Fee</span><span class="val">${fmt(CONFIG.BASE_FEE)}</span></div>
+        ${rows}
+        ${negRow}
+        <div class="price-row total-row">
+          <span class="lbl">TOTAL ESTIMATE</span>
+          <span class="val">${fmt(res.total)}</span>
+        </div>
+      </div>
+
+      <p class="area-note">Total traced area: ${PricingEngine.sqft(res.totalSqft)}</p>
+
+      <div class="field">
+        <label>Your Name</label>
+        <input type="text" id="cust-name" placeholder="Jane Smith" />
+      </div>
+      <div class="field">
+        <label>Contact (Phone or Email)</label>
+        <input type="text" id="cust-contact" placeholder="(555) 000-0000" />
+      </div>
+
+      <button class="btn btn-primary" id="btn-book" onclick="App.openCalendar()">
+        ${this._hasCalendar() ? 'Select Date &amp; Download PDF →' : 'Download PDF →'}
+      </button>
+      <div class="mt-8"></div>
+      <button class="btn btn-ghost w-full" onclick="App.goTo(2)">← Re-trace Area</button>
+      <p style="font-size:10.5px;color:var(--text-muted);line-height:1.5;margin-top:18px;text-align:center;">Estimates are powered by Prezure. By submitting this form you agree to Prezure's <a href="../5/privacy.php" target="_blank" rel="noopener" style="color:var(--text-muted);text-decoration:underline;">Privacy Policy</a>.</p>
+    `;
+  },
+
+  _hasCalendar() {
+    const a = this.contractor?.availability || {};
+    return a.days?.length > 0 && a.time_slots?.length > 0;
+  },
+
+  openCalendar() {
+    const name = UI.$('cust-name')?.value.trim();
+    if (!name) { UI.$('cust-name')?.focus(); return; }
+
+    if (this._hasCalendar()) {
+      const availability = this.contractor.availability;
+      Calendar.open(availability, booking => {
+        this.booking = booking;
+        this.downloadPDF();
+      });
+    } else {
+      this.booking = null;
+      this.downloadPDF();
+    }
+  },
+
+  // ── Preview ───────────────────────────────────────────────────
+  async _buildPreview() {
+    // Show the address above the preview image
+    const addrEl = UI.$('preview-address');
+    if (addrEl) addrEl.textContent = this.address || '';
+
+    const pc = UI.$('preview-canvas');
+    if (!pc) return;
+    const container = UI.$('summary-preview');
+    const isMobile = window.innerWidth <= 768;
+    let cw, ch;
+    if (isMobile) {
+      const size = Math.min(Math.floor(container.clientWidth * 0.95), Math.floor(container.clientHeight * 0.9), 480);
+      cw = size; ch = size;
+    } else {
+      cw = Math.min(Math.floor(container.clientWidth * 0.7), 620);
+      ch = Math.min(Math.floor(container.clientHeight * 0.72), 480);
+    }
+    pc.width = cw; pc.height = ch;
+    pc.style.width = cw + 'px'; pc.style.height = ch + 'px';
+    await Tracer.drawPreviewWithMap(pc);
+
+    const legend = UI.$('preview-legend');
+    if (!legend) return;
+    const used = [...new Set(Tracer.polygons.map(p => p.type))];
+    legend.innerHTML = used.map(t => {
+      const svc = CONFIG.SERVICES[t];
+      return `<div class="legend-item"><div class="legend-swatch" style="background:${svc.color}"></div>${svc.label}</div>`;
+    }).join('');
+  },
+
+  // ── Send ──────────────────────────────────────────────────────
+  async downloadPDF() {
+    const name    = UI.$('cust-name')?.value.trim();
+    const contact = UI.$('cust-contact')?.value.trim();
+    if (!name) return;
+
+    const btn = UI.$('btn-book');
+    if (btn) { btn.textContent = 'Generating PDF…'; btn.disabled = true; }
+
+    try {
+      const res = PricingEngine.calculate(Tracer.polygons);
+      const fmt = PricingEngine.currency;
+      const b   = this.booking;
+
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ unit: 'mm', format: 'letter' });
+      const pageW = 215.9;
+      const marginL = 20, marginR = 20;
+      const contentW = pageW - marginL - marginR;
+      const rightX = pageW - marginR;
+      let y = 18;
+
+      // Header
+      doc.setFont('Helvetica', 'bold');
+      doc.setFontSize(22);
+      doc.setTextColor(0, 0, 0);
+      doc.text((this.contractor.company_name || 'PREZURE ESTIMATE').toUpperCase(), marginL, y);
+      y += 4;
+      doc.setDrawColor(0, 0, 0);
+      doc.setLineWidth(0.5);
+      doc.line(marginL, y, rightX, y);
+      y += 10;
+
+      // Customer info
+      doc.setFontSize(11);
+      doc.setTextColor(80, 80, 80);
+      const info = [
+        ['Customer:', name],
+        ['Contact:', contact || 'N/A'],
+        ['Address:', this.address || 'N/A'],
+      ];
+      if (b) {
+        info.push(['Date:', b.displayDate]);
+        info.push(['Time:', b.displayTime]);
+      }
+      for (const [label, value] of info) {
+        doc.setFont('Helvetica', 'bold');
+        doc.text(label, marginL, y);
+        doc.setFont('Helvetica', 'normal');
+        doc.text(String(value), marginL + 28, y);
+        y += 6;
+      }
+      y += 4;
+
+      // Estimate heading
+      doc.setDrawColor(180, 180, 180);
+      doc.setLineWidth(0.3);
+      doc.line(marginL, y, rightX, y);
+      y += 7;
+      doc.setFont('Helvetica', 'bold');
+      doc.setFontSize(13);
+      doc.setTextColor(0, 0, 0);
+      doc.text('ESTIMATE BREAKDOWN', marginL, y);
+      y += 3;
+      doc.setDrawColor(180, 180, 180);
+      doc.line(marginL, y, rightX, y);
+      y += 7;
+
+      // Price rows
+      doc.setFontSize(11);
+      doc.setFont('Helvetica', 'normal');
+      doc.setTextColor(60, 60, 60);
+      doc.text('Base Fee', marginL, y);
+      doc.text(fmt(CONFIG.BASE_FEE), rightX, y, { align: 'right' });
+      y += 6;
+
+      for (const [key, svc] of Object.entries(CONFIG.SERVICES)) {
+        if (key === 'negative') continue;
+        const bd = res.breakdown[key];
+        if (!bd || bd.sqft < 0.01) continue;
+        doc.text(`${svc.label} (${PricingEngine.sqft(bd.sqft)})`, marginL, y);
+        doc.text(fmt(bd.cost), rightX, y, { align: 'right' });
+        y += 6;
+      }
+
+      // Total
+      y += 2;
+      doc.setDrawColor(0, 0, 0);
+      doc.setLineWidth(0.5);
+      doc.line(marginL, y, rightX, y);
+      y += 7;
+      doc.setFont('Helvetica', 'bold');
+      doc.setFontSize(14);
+      doc.setTextColor(0, 0, 0);
+      doc.text('TOTAL', marginL, y);
+      doc.text(fmt(res.total), rightX, y, { align: 'right' });
+      y += 12;
+
+      // Preview image
+      const pc = UI.$('preview-canvas');
+      if (pc) {
+        try {
+          const imgData = pc.toDataURL('image/png');
+          const imgW = contentW;
+          const imgH = imgW * (pc.height / pc.width);
+          const maxH = 279.4 - y - 20;
+          const finalH = Math.min(imgH, maxH);
+          const finalW = finalH === imgH ? imgW : finalH * (pc.width / pc.height);
+          const imgX = marginL + (contentW - finalW) / 2;
+          doc.addImage(imgData, 'PNG', imgX, y, finalW, finalH);
+          y += finalH + 6;
+        } catch (e) { /* CORS or tainted canvas — skip image */ }
+      }
+
+      // Footer
+      doc.setFont('Helvetica', 'normal');
+      doc.setFontSize(8);
+      doc.setTextColor(150, 150, 150);
+      doc.text('Generated by Prezure', marginL, 279.4 - 10);
+      doc.text(new Date().toLocaleString(), rightX, 279.4 - 10, { align: 'right' });
+
+      doc.save('Prezure-Estimate.pdf');
+
+      // ── Submit to backend (email contractor + log estimate) ──
+      const previewCanvas = UI.$('preview-canvas');
+      let previewImage = '';
+      try { previewImage = previewCanvas ? previewCanvas.toDataURL('image/png') : ''; } catch (_) {}
+
+      const payload = {
+        // Auth: server re-derives contractor_id from the calculator_key.
+        // Sending the ID would let an attacker target any contractor.
+        calculator_key: ContractorService.key || new URLSearchParams(window.location.search).get('key') || '',
+        customer: {
+          name:    name,
+          contact: contact || '',
+          address: this.address || '',
+        },
+        booking: b ? {
+          date:        b.date,
+          time:        b.time,
+          displayDate: b.displayDate,
+          displayTime: b.displayTime,
+        } : { date: '', time: '', displayDate: '', displayTime: '' },
+        estimate: {
+          base_fee:      CONFIG.BASE_FEE,
+          service_total: res.serviceTotal,
+          total:         res.total,
+          totalSqft:     res.totalSqft,
+          breakdown:     res.breakdown,
+        },
+        areas: Object.entries(CONFIG.SERVICES)
+          .filter(([k]) => k !== 'negative')
+          .filter(([k]) => res.breakdown[k] && res.breakdown[k].sqft > 0)
+          .map(([k, svc]) => ({
+            label: svc.label,
+            sqft:  res.breakdown[k].sqft,
+            rate:  svc.rate,
+          })),
+        preview_image: previewImage,
+        map_center: MapService.map
+          ? { lat: MapService.map.getCenter().lat(), lng: MapService.map.getCenter().lng() }
+          : { lat: 0, lng: 0 },
+        map_zoom:    MapService.map ? MapService.map.getZoom() : 18,
+        coordinates: Tracer.polygons.map(p => ({ latLngs: p.latLngs, type: p.type })),
+        timestamp:   new Date().toISOString(),
+      };
+
+      await fetch('submit.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      this._renderSuccess(res);
+    } catch (err) {
+      console.error('PDF generation failed:', err);
+      if (btn) {
+        btn.textContent = this._hasCalendar() ? 'Select Date & Download PDF →' : 'Download PDF →';
+        btn.disabled = false;
+      }
+      alert(`Could not generate PDF: ${err.message}`);
+    }
+  },
+
+  _renderSuccess(res) {
+    const body = UI.$('sidebar-body');
+    const b    = this.booking;
+    body.innerHTML = `
+      <div class="success-screen fade-up">
+        <div class="success-ring">✓</div>
+        <h2>PDF DOWNLOADED!</h2>
+        <p>Your estimate has been saved. Share it with ${this.contractor.company_name} to schedule your service.</p>
+        <div class="price-breakdown" style="width:100%;text-align:left;">
+          <div class="price-row"><span class="lbl">Address</span><span class="val" style="font-size:12px;max-width:55%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">${this.address}</span></div>
+          ${b ? `<div class="price-row"><span class="lbl">Requested</span><span class="val" style="font-size:12px;">${b.displayDate} at ${b.displayTime}</span></div>` : ''}
+          <div class="price-row total-row"><span class="lbl">TOTAL</span><span class="val">${PricingEngine.currency(res.total)}</span></div>
+        </div>
+        <p style="font-size:11px;color:var(--text-muted);line-height:1.5;margin-top:14px;">The selected time is not guaranteed. The contractor will reach out to confirm scheduling and discuss further details.</p>
+        <button class="btn btn-secondary w-full mt-12" onclick="location.reload()">Start New Estimate</button>
+      </div>
+    `;
+    this._updateDots(4);
+  },
+};
+
+
+/* ================================================================
+   ⑩ BOOT
+   ================================================================ */
+
+// Called by Google Maps once its script has fully loaded.
+window._mapsReady = function () {
+  // Map is created in goTo(2) when the layer is visible — not here.
+  // Address coordinates come from geocode.php (server-side).
+  // If step 1 is showing and autocomplete hasn't been mounted yet, mount it now.
+  const wrap = document.getElementById('place-autocomplete-wrap');
+  if (wrap && window.google?.maps?.places?.PlaceAutocompleteElement) {
+    wrap.innerHTML = '';
+    MapService.initAutocomplete('place-autocomplete-wrap');
+  }
+};
+
+// Injects the Maps script tag using the URL returned by contractor.php.
+// The API key is embedded in that URL by PHP — it never exists in
+// this JS file, only in PHP's server-side environment.
+function _loadMapsScript(url) {
+  const s = document.createElement('script');
+  s.src   = url;                  // e.g. "…/maps/api/js?key=SERVER_SIDE_KEY&…"
+  s.async = true;
+  s.defer = true;
+  s.onerror = () => console.error('[Prezure] Google Maps failed to load. Check the PHP MAPS_API_KEY setting and billing status.');
+  document.head.appendChild(s);
+}
+
+window.addEventListener('DOMContentLoaded', () => App.init());
+</script>
+</body>
+</html>

@@ -1,0 +1,24 @@
+# Secrets — must never be committed
+.env
+.env.*
+!.env.example
+
+# Local IDE/agent state
+.claude/
+**/.claude/
+
+# Audit log + rate-limit buckets + geocode cache
+_audit.log
+_ratelimit/
+_geocode_cache.json
+
+# Uploaded customer preview images
+1/previews/*
+!1/previews/.htaccess
+
+# Temporary / OS noise
+Thumbs.db
+.DS_Store
+desktop.ini
+*.tmp
+*.bak

@@ -1,0 +1,2 @@
+# Shared PHP library — never serve directly.
+Require all denied

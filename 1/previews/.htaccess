@@ -1,0 +1,15 @@
+# Customer satellite previews directory.
+#
+# - PHP execution OFF (defense vs. malicious upload masquerading as PNG)
+# - Only serve raster image extensions
+# - Block directory listing
+Options -Indexes
+php_flag engine off
+
+<FilesMatch "\.(php|phtml|php5|pl|py|jsp|asp|sh|cgi|html|htm)$">
+    Require all denied
+</FilesMatch>
+
+<FilesMatch "\.(png|jpg|jpeg)$">
+    Require all granted
+</FilesMatch>

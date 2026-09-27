@@ -1,0 +1,40 @@
+{
+    "users": [
+        {
+            "id": 1,
+            "username": "guest",
+            "name": "Guest",
+            "email": "guest@mail.com",
+            "password": "$2y$10$39L9rgqCOrcDwJ12QtTcA.0uxyJ9TcMiRxZjBZc8qrA5nAYB6Uo0a",
+            "phone": "5555550100",
+            "company_name": "Guest",
+            "address": "123 Demo Street",
+            "calculator_key": "Guest",
+            "pricing_standard": 0.2,
+            "pricing_base": 50,
+            "pricing_chemical": 0.25,
+            "pricing_heavy": 0.35,
+            "available_days": [
+                "monday",
+                "tuesday",
+                "wednesday",
+                "thursday",
+                "friday"
+            ],
+            "available_hours": [
+                "09:00",
+                "10:00",
+                "11:00",
+                "12:00",
+                "13:00",
+                "14:00",
+                "15:00",
+                "16:00",
+                "17:00"
+            ],
+            "created_at": "2026-09-27T14:00:00+00:00",
+            "tos_agreed_at": "2026-09-27T14:00:00+00:00"
+        }
+    ],
+    "next_id": 2
+}

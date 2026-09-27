@@ -1,0 +1,3 @@
+# scripts/ contains CLI-only maintenance utilities.
+# Block all HTTP access so they cannot be triggered via the browser.
+Require all denied

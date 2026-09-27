@@ -1,0 +1,30 @@
+# =============================================================================
+# Prezure root .htaccess
+#
+# - Routes 4xx/5xx errors to the custom page in /6/error.php
+# - Denies direct access to any *.json (users, bookings, estimates, env, audit)
+# - Denies any file/folder that starts with a dot (.env, .git, .claude, etc.)
+# - Denies any *.log file (audit log)
+# - Blocks dangerous extensions inside the previews/ directory
+# - Disables directory indexes
+# =============================================================================
+
+# Custom error pages. Change /prezure2 to the same path as APP_BASE_URL.
+ErrorDocument 404 /prezure2/6/error.php
+ErrorDocument 500 /prezure2/6/error.php
+ErrorDocument 403 /prezure2/6/error.php
+ErrorDocument 401 /prezure2/6/error.php
+
+# Disable directory listing globally.
+Options -Indexes
+
+# Block direct download of any JSON file (users.json, bookings.json,
+# per-contractor estimate files, *.env, etc.). Apache 2.4 syntax.
+<FilesMatch "\.(json|log|env|md|sql|sqlite|sqlite3|db)$">
+    Require all denied
+</FilesMatch>
+
+# Block dotfiles (.env, .git, .htaccess copies, .claude, etc.).
+<FilesMatch "^\.">
+    Require all denied
+</FilesMatch>
